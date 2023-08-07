@@ -1,0 +1,20 @@
+// fxRemoveChars()
+// © 2023 Adiv Abramson
+
+// Remove one or more characters from the input string and
+// return the modified string.
+// Text.SplitAny() will break up the input string on all of
+// the specified delimiters, which are the characters we want to remove.
+// Then reassemble the list object returned by Text.SplitAny()
+// into a text string and return its value.
+
+(input as text, remove_chars as text) =>
+let
+    split_input = if input <> null 
+                    then Text.SplitAny(input, remove_chars)
+                    else null,
+    output = if split_input <> null 
+             then Text.Combine(split_input, null)
+             else null
+in
+    output

@@ -1,0 +1,19 @@
+// fxGetNumerics()
+// © 2023 Adiv Abramson
+
+// Extract the numeric characters from the input string and optionally
+// return unique characters.
+
+(text as text, optional distinct_values as logical) as list =>
+
+let
+    // Convert input string to list. Then inspect each character.
+    // If character is in list 0..9, accumulate to output variable
+    charList = Text.ToList(text),
+    output = List.Select(charList, 
+                         each try Value.Type(Number.FromText(_)) = type number otherwise false),
+    final_output = 
+        if distinct_values = null or distinct_values = false then output else List.Distinct(output)
+
+in
+    final_output

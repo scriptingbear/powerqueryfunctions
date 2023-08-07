@@ -1,0 +1,22 @@
+// fxDynamicText()
+// © 2023 Adiv Abramson
+
+// Replace placeholders in input text, delimited by {, and },
+// with values from the FindReplace table. 
+
+(input as text) =>
+let
+    // From the FindReplace table, create a list of lists {<find value>, <replace value>}
+    // Have to case each element of Mapping as a list itself before using it in the 
+    // accumulator function.
+     Mapping = Table.ToList(FindReplace, Combiner.CombineTextByDelimiter(",")),
+     // Transform each element of Mapping into a list because initially each
+     // element is just a text string with no structure. We require an indexed
+     // sequence of items, so we can replace occurrences of the first element 
+     // with the value in the second element.
+    Mapping_List = List.Transform(Mapping, each Text.Split(_, ",")),
+    // The "seed" (2nd argument) is the original input string containing placeholders for 
+    // dynamic text substitution.
+    Source = List.Accumulate(Mapping_List, input, (state, current) => Text.Replace(state, current{0}, current{1}))
+in
+    Source

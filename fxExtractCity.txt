@@ -1,0 +1,37 @@
+// fxExtractCity()
+// © 2023 Adiv Abramson
+
+// Attempt to extract the city from the 
+// input string of the form <city>(,| ) <state> <zip>
+// Now using custom function TrimAll(), developed earlier.
+
+(input as any) as any =>
+let
+   // Trim internal and external spaces
+   Trimmed_Text = try TrimAll(input) otherwise "",
+   Removed_Commas = Text.Replace(Trimmed_Text, ",", ""),
+   Split_Text = Text.Split(Removed_Commas, " "),
+   // Inspect the second-to-last element of the list to see if it consists
+   // of two uppercase alphabetic characters
+   // Index of second-to-last element is 2 less than the count
+   // because list is 0 based. E.g. In a list with 3 elements,
+   // the index of the second-to-last element is 1 (= 3-2).
+   State_Element_Index = List.Count(Split_Text) - 2, 
+   State_Element = Split_Text{State_Element_Index},
+   State_Element_As_List = Text.ToList(State_Element),
+   State = if Text.Length(State_Element) = 2 
+                and List.ContainsAny(State_Element_As_List, {"A".."Z"}) 
+             then 
+                State_Element  
+             else 
+                null,
+
+    City = if State <> null 
+           then 
+              Text.Combine(List.FirstN(Split_Text, State_Element_Index), " ")
+           else 
+              null
+           
+                   
+in
+   try City otherwise null

@@ -1,0 +1,39 @@
+// fxGenerateRunningTotalColumn()
+// © 2023 Adiv Abramson
+
+// Generate a list containing running total values
+// based on the specified column from the specified table.
+// In other words, to generate a [Running Total] column
+// from the [Units Sold] column of the Sales table, invoke
+// this function as fxGenerateRunningTotalColumn(Sales[Units Sold])
+
+(table_column as list) =>
+
+let
+    BufferedList = List.Buffer(table_column),
+    Source = List.Generate(
+                            // First parameter is a record consisting of the first value
+                            // of the buffered list and a counter initialized to 0.
+                           ()=> [item = BufferedList{0}, counter=0],
+                           // Second parameter specifies the stop condition
+                            each [counter] < List.Count(BufferedList),
+                            // Third parameter specifies the operations on the current
+                            // item in the list. This in turn will be tested by the 
+                            // stop condition. If the stop condition is obtained
+                            // list processing terminates
+                            // To calculate the running total, add the next value in 
+                            // the buffered list to the current item and also increment
+                            // the counter, whose value will be checked against the
+                            // total number of items in the list in order to know 
+                            // when to stop processing
+                            // Use List.Sum() instead of a simple addition so that if
+                            // a null value is encountered, that will not break the calculation
+                            // chain. A null will be treated as a 0, I believe.
+                            each [item = List.Sum({[item], BufferedList{[counter] + 1}}), 
+                                counter = [counter] + 1],
+                            // Last parameter specified what items in the generated list to
+                            // return
+                            each [item]
+                        )
+in
+    Source

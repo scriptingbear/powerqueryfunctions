@@ -1,0 +1,25 @@
+// fxSumOfNumericColumns()   
+// © 2023 Adiv Abramson
+
+// Returns the sum of the numeric columns in the specified table in the specified row.
+// Requires fxGetNumericTableColumnNames() to get the list of numeric columns
+// This function is processor intensive and is not recommended for large tables
+// containing thousands of rows of data. It is acceptably performant, I believe,
+// for tables with no more than a few hundred rows and no more than a few dozen columns.
+
+(data_table as table, row_index as number) =>
+
+let
+    // Create a record whose field names are the names of the columns in data_table and whose
+    // field values are the values corresponding to the field names on the specified row_index row.
+    Source = data_table{row_index},
+    // Select those record fields whose names match the list of columns of numeric data type in the specified data_table
+    Numeric_Fields = Record.SelectFields(Source, fxGetNumericTableColumnNames(data_table)),
+    // Convert the record created in the previous step to a list, whose elements will be the field values from
+    // that record.
+    Numeric_Field_Values = Record.ToList(Numeric_Fields),
+    // Perform a sum operation using List.Sum() which converts null values to 0.
+    Grand_Total = List.Sum(Numeric_Field_Values)
+
+in
+    Grand_Total

@@ -1,0 +1,32 @@
+// fxGenerateDateTable()
+// © 2023 Adiv Abramson
+
+// Generate a date table from the specified data range consisting of the following columns:
+// [Date], [Year], [Month], [Month Name] [Day], [Day Name], [Day of Week], [Day of Year], 
+// [Week of Year], [Quarter]
+// Return null if End Date < Start Date
+
+(start_date as date, end_date as date) =>
+
+let
+    Source = if end_date < start_date then null 
+             else 
+             let Date_Table =                
+                Table.FromColumns(
+                 {List.Dates(start_date, Number.From(end_date) - Number.From(start_date) + 1, #duration(1,0,0,0))}, 
+                 type table[Date = Date.Type]),
+                Added_Year = Table.AddColumn(Date_Table, "Year", each Date.Year([Date]),  Int64.Type),
+                Added_Month = Table.AddColumn(Added_Year, "Month", each Date.Month([Date]), Int64.Type),
+                Added_Month_Name = Table.AddColumn(Added_Year, "Month Name", each Date.MonthName([Date]), type text),
+                Added_Day = Table.AddColumn(Added_Month_Name, "Day", each Date.Day([Date]), Int64.Type),
+                Added_Day_Name = Table.AddColumn(Added_Day, "Day Name", each Date.DayOfWeekName([Date]), type text),
+                Added_DayOfWeek = Table.AddColumn(Added_Day_Name, "Day of Week", each Date.DayOfWeek([Date]), Int64.Type),
+                Added_DayOfYear = Table.AddColumn(Added_DayOfWeek, "Day of Year", each Date.DayOfYear([Date]), Int64.Type),
+                Added_WeekOfYear = Table.AddColumn(Added_DayOfYear, "Week of Year", each Date.WeekOfYear([Date]), Int64.Type),
+                Added_Quarter = Table.AddColumn(Added_WeekOfYear, "Quarter", each Date.QuarterOfYear([Date]), Int64.Type),
+                Output = Added_Quarter
+            in 
+                Output
+
+in
+    Source

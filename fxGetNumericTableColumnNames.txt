@@ -1,0 +1,16 @@
+// fxGetNumericTableColumnNames()
+// © 2023 Adiv Abramson
+
+// Returs a list of column names in the specified table that are numeric,
+// which in turn can be passed to functions like List.Sum(). Useful when
+// mathematical operations must be performed on a large number of columns
+// and we don't want to have to write them all out in the call to List.Sum()
+// or List.Product. Contiguous subsets of the list of columns can be selected
+// using List.Range(). Not yet sure how to specify discontigous items in a list.
+
+(Source as table) =>
+
+let
+    Numeric_Column_Names = Table.ColumnsOfType(Source, {type nullable number})
+in
+    Numeric_Column_Names

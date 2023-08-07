@@ -1,0 +1,27 @@
+// fxExtractZip()
+// © 2023 Adiv Abramson
+
+// Attempt to extract the regular 5 digit or zip+4 zip code from the 
+// input string. Now using custom function TrimAll(), developed earlier.
+(input as any) as any =>
+let
+   // Trim internal and external spaces
+   Trimmed_Text = try TrimAll(input) otherwise "",
+   Removed_Commas = Text.Replace(Trimmed_Text, ",", ""),
+   Split_Text = Text.Split(Removed_Commas, " "),
+   // Inspect the last element of the list to see if it consists
+   // of 5 digits or 5 digits + "-" + 4 digits
+   Last_Element = List.Last(Split_Text),
+   // But must also check the second-to-last element to make sure it
+   // is exactly 2 characters in length, as a state abbreviation.
+   // Otherwise function will extract numeric text after POB, for example
+   State_Element = Split_Text{List.Count(Split_Text) - 2},
+   ZipCode = if (Text.Length(Last_Element) = 5 
+                or (Text.Length(Last_Element) = 10 and Text.Contains(Last_Element, "-")))
+                and Text.Length(State_Element) = 2 and List.ContainsAny(Text.ToList(State_Element), {"A".."Z"})
+             then Last_Element 
+             else null   
+             
+                   
+in
+    try ZipCode otherwise null
