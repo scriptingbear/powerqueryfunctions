@@ -1,0 +1,27 @@
+// fxGetNullColumns()
+/*
+   Determine which columns in specified table contain only null, 
+   so that they can be removed from the table. This will enable dynamic processing 
+   because now the columns to be deleted will not be hard coded.
+   NEW CODE: 08/12/2023 - Now using optional parameter to search for 
+   blanks instead of nulls.
+   Also now storing number of rows of table in a variable so it doens't
+   have to be recalculated in the List.Accumulate() function.
+*/
+
+(data_table as table, optional search_for_blanks as logical) =>
+let
+    Record_Count = Table.RowCount(data_table),
+    Search_Value = if search_for_blanks = null or not search_for_blanks then null else "",
+    Source = List.Accumulate(
+              Table.ColumnNames(data_table),
+              {},
+              (state, current) => 
+                 if List.Count(List.Select(Table.Column(data_table, current), 
+                               each _ = Search_Value)) = 
+                               Record_Count    //List.Count(Table.Column(data_table, current)) 
+                               then state & {current} else state & {null}     
+                           ),
+    Null_Columns = List.Select(Source, each _ <> null)
+in
+    Null_Columns
