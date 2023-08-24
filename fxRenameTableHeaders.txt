@@ -1,27 +1,23 @@
 /*fxRenameTableHeaders()
 // © 2023 Adiv Abramson
 
-  Use MappingHeaders table to rename the headers of the specified table.
+  Use HeaderMapping table to rename the headers of the specified table.
   1.) Collect the headers of the specified table in a list.
-  2.) If there is an entry in MappingHeaders[Before] then use MappingHeaders[After] corresponding
+  2.) If there is an entry in MappingHeaders[Before] then use HeaderMapping[After] corresponding
       to that entry as the new header. Othewise do nothing
-
-
-
 */
 
 (Source as any) =>
 let
-    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
-    Source_Headers = Table.ColumnNames(#"Promoted Headers"),
-    // Only have to rename headers listed in Mapping[Before] if any exist in the specified table.
+    Source_Headers = Table.ColumnNames(Source),
+    // Only have to rename headers listed in HeaderMapping[Before] if any exist in the specified table.
     // So an already correct header like "Zip Code" doesn't need to be renamed. But if the specified
     // table contains a column named "ZipCode", it needs to be renamed to "Zip Code".
     HeadersToRename = List.Select(HeaderMapping[Before], each List.Contains(Source_Headers, _)),
     // This step generates a list of lists that can be used in Table.RenameColumns()
     // Note that the column header values DO NOT need to be surrounded by double quotes.
     Rename_Headers_Specs = List.Transform(HeadersToRename, each {_ , HeaderMapping{[Before = _]}[After]}),
-    #"Renamed Columns" = Table.RenameColumns(#"Promoted Headers", Rename_Headers_Specs)
+    #"Renamed Columns" = Table.RenameColumns(Source, Rename_Headers_Specs)
 
 in
     #"Renamed Columns"
