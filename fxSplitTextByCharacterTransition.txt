@@ -1,0 +1,85 @@
+// fxSplitTextByCharacterTransition()
+// © 2023 Adiv Abramson
+/*
+    Given a column containing numerics and non-numerics, split each off each sequence of characters 
+    of a given type. Optionally ignore blanks, commas, and dashes. 
+    The resulting list can then be expanded as desired into separate columns or rows.
+*/
+
+(Source as text) as text =>
+let
+    // Declare a list to hold the splitted input text. Each element will be
+    // a sequence of alphabetic or numeric characters, e.g. {"ABC", "123", "WW", "9037"}
+    splits_list = {},
+    // Convert input string to a list of characters
+    chars_list = Text.ToList(Source),
+    char_count = List.Count(chars_list),
+    numeric_chars = {"0".."9"},
+    alpha_chars = {"A".."Z", "a".."z"},
+    //char_accumulator = "",
+    split_info = [splits = {}, char_accumulator = ""],
+    // Declare an in line function to determine the type of character
+    is_alpha_char = (char as text) => not List.Contains(numeric_chars, char),
+    // Iterate through the characters of the input string, adding a new element to
+    // splits_list each time the character type changes. Must compare the 
+    // type of the current character to the type of the next character. When
+    // this changes, the characters accumulated thus far are added as an element
+    // to splits_list and the accumulator is reset to an empty string.
+    break_input_on_char_transitions = List.Accumulate(
+                             {0..char_count-1},
+                             split_info, //[splits = {}, char_accumulator = ""],
+                             (state, current) => 
+                                                let 
+                                                    // if both the last accumulated character and the current character
+                                                    // of the input text are alphabetic or if both are numeric, then the character type
+                                                    // has *NOT* changed; otherwise it has changed
+                                                    accumulated_chars = state[char_accumulator],
+                                                    last_accumulated_char = if accumulated_chars = "" then "" else Text.End(accumulated_chars, 1),
+                                                    current_char = chars_list{current},
+                                                    char_type_changed = if (is_alpha_char(last_accumulated_char) 
+                                                                            and is_alpha_char(current_char)) 
+                                                                        or 
+                                                                          (not is_alpha_char(last_accumulated_char) 
+                                                                           and not is_alpha_char(current_char))
+                                                                    then false else true, 
+                                                    update_split_info = let 
+                                                                            // If the type of the current character is the same
+                                                                            // as the type of the last accumulated character, just
+                                                                            // add the current character to the accumulated characters
+                                                                            // and don't update splits.
+                                                                            is_last_input_char = (current = char_count - 1),
+                                                                            step1 = 
+                                                                                    if not char_type_changed then 
+                                                                                            if not is_last_input_char then 
+                                                                                                    [splits = state[splits], 
+                                                                                                    char_accumulator = accumulated_chars & current_char]
+                                                                                                // If the type of the current character is NOT the same
+                                                                                                // as the type of the last character in splits
+                                                                                                else 
+                                                                                                    [splits = state[splits] & {accumulated_chars & current_char},
+                                                                                                    char_accumulator = ""]
+                                                                                    else 
+                                                                                        // Add the remaining accumulated characters as a new element in splits
+                                                                                        if not is_last_input_char then 
+                                                                                            [splits = state[splits] & {accumulated_chars},
+                                                                                            char_accumulator = current_char]
+                                                                                        else 
+                                                                                            [splits = state[splits] & {accumulated_chars} & {current_char},
+                                                                                             char_accumulator = ""]
+
+                                                                            in 
+                                                                                step1
+                                                    in
+                                                        update_split_info
+
+                            // [splits = state[splits] & {current}, 
+                            // char_accumulator = state[char_accumulator] & Text.From(current)]
+
+
+                             ),
+    cleaned_list = List.Select(break_input_on_char_transitions[splits], each Text.Trim(_) <> ""),
+    output = Text.Combine(cleaned_list, ",")
+
+
+in
+    output
