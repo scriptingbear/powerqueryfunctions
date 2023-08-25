@@ -1,4 +1,4 @@
-// fxSplitTextByCharacterTransition()
+// fxSplitTextByCharacterTransition()  [DRAFT: ALL FEATURES NOT YET FULLY IMPLEMENTED]
 // © 2023 Adiv Abramson
 /*
     Given a column containing numerics and non-numerics, split each off each sequence of characters 
