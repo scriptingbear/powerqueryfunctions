@@ -1,0 +1,24 @@
+// fxFormatAsLogical()
+// © 2023 Adiv Abramson
+
+/*
+    Returns either an actual true/false value or "Yes"/"No", 
+    since in  Power Query a logical column can only contain TRUE/FALSE.
+*/
+
+(Source as any, optional yes_no_format as nullable logical) as any =>
+
+let
+    false_values = {false, "FALSE", "false", 0, null},
+    false_output_value = if yes_no_format = null or yes_no_format = false then false else "No",
+    true_output_value = if yes_no_format = null or yes_no_format = false then true else "Yes",
+    output = if Source = null then null 
+             else 
+                let 
+                    is_false_value = List.ContainsAny({Source}, false_values),
+                    temp_result = if is_false_value then false_output_value else true_output_value 
+                in 
+                   temp_result
+
+in
+    output
