@@ -1,0 +1,34 @@
+/* fxCreateDatesTable()
+   © 2024 Adiv Abramson
+
+   Automatically create a Dates table for time intelligence DAX calculations from specified source table date column,
+*/
+
+(data_table as table, date_column as list) as table =>
+
+let
+   sorted_dates_list = List.Sort(List.Distinct(date_column)),
+   convert_list_to_table = Table.FromList(sorted_dates_list, Splitter.SplitByNothing(), {"Date"}),
+   add_year = Table.AddColumn(convert_list_to_table, "Year", each Date.Year([Date])),
+   add_month_number = Table.AddColumn(add_year, "Month Number", each Date.Month([Date])),
+   add_day = Table.AddColumn(add_month_number, "Day", each Date.Day([Date])),
+   add_month_name = Table.AddColumn(add_day, "Month Name", each Date.MonthName([Date])),
+   add_day_name = Table.AddColumn(add_month_name, "Day Name", each Date.DayOfWeekName([Date])),
+   add_day_of_week = Table.AddColumn(add_day_name, "Day of Week", each Date.DayOfWeek([Date])),
+   // In Power Query Sunday is 0 and Saturday is 6, so weekend days are 0,6
+   add_is_weekend = Table.AddColumn(add_day_of_week, "Is Weekend", each List.ContainsAny({0,6}, {Date.DayOfWeek([Date])})),
+   add_quarter = Table.AddColumn(add_is_weekend, "Quarter", each  Text.Combine({"Q", Text.From(Date.QuarterOfYear([Date]))})),
+   transform_column_types = Table.TransformColumnTypes(add_quarter, 
+      {
+         {"Date", type date}, 
+         {"Year", Int64.Type}, 
+         {"Month Number", Int64.Type}, 
+         {"Day", Int64.Type}, 
+         {"Month Name", type text}, 
+         {"Day Name", type text}, 
+         {"Day of Week", Int64.Type},
+         {"Is Weekend", type logical},
+         {"Quarter", type text}
+      })
+in
+    add_quarter
