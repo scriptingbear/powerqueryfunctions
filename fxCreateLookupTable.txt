@@ -1,0 +1,25 @@
+/* fxCreateLookupTable()
+   © 2024 Adiv Abramson
+
+   Automatically generate a SINGLE lookup table from a specified text column
+   in the specified source table. Later, use JoinSourceAndLookupTables()
+   to join the specified table and the new lookup table and remove the 
+   column in the source table used to populate the lookup table.
+  
+   Assume specified column does not contain any nulls or error values.
+   Use only on text columns.
+*/
+
+(data_table as table, lookup_column as text, lookup_key_column_name as text) as any =>
+
+let   
+   unique_column_values = List.Distinct(Table.Column(data_table, lookup_column)),
+   new_lookup_table_from_list = Table.FromList(unique_column_values, Splitter.SplitByNothing(), {lookup_column}),
+   sort_lookup_table = Table.Sort(new_lookup_table_from_list, {lookup_column, Order.Ascending}),
+   add_index_column = Table.AddIndexColumn(sort_lookup_table, lookup_key_column_name,1,1),
+   reorder_new_lookup_table_columns = Table.ReorderColumns(add_index_column, {lookup_key_column_name, lookup_column}),
+   transform_column_types = 
+            Table.TransformColumnTypes(reorder_new_lookup_table_columns, {{lookup_key_column_name, Int64.Type}, {lookup_column, type text}})
+   
+in   
+   transform_column_types
