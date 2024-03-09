@@ -1,19 +1,22 @@
 /* fxCreateDatesTable()
    © 2024 Adiv Abramson
-
-   Automatically create a Dates table for time intelligence DAX calculations from specified source table date column,
+   
+   Automatically create a Dates table for time intelligence DAX calculations from specified source table date column.
+   Must create a list of ALL dates between the earliest and the latest date in the Orders table
 */
 
 (data_table as table, date_column as list) as table =>
 
 let
-   sorted_dates_list = List.Sort(List.Distinct(date_column)),
+   min_date = List.Min(Orders[Order Date]),
+   max_date = List.Max(Orders[Order Date]),
+   sorted_dates_list = List.Dates(min_date, Number.From(max_date) - Number.From(min_date) + 1, #duration(1,0,0,0) ),
    convert_list_to_table = Table.FromList(sorted_dates_list, Splitter.SplitByNothing(), {"Date"}),
    add_year = Table.AddColumn(convert_list_to_table, "Year", each Date.Year([Date])),
    add_month_number = Table.AddColumn(add_year, "Month Number", each Date.Month([Date])),
    add_day = Table.AddColumn(add_month_number, "Day", each Date.Day([Date])),
-   add_month_name = Table.AddColumn(add_day, "Month Name", each Date.MonthName([Date])),
-   add_day_name = Table.AddColumn(add_month_name, "Day Name", each Date.DayOfWeekName([Date])),
+   add_month_name = Table.AddColumn(add_day, "Month Name", each DateTime.ToText(DateTime.From([Date]), [Format = "MMM"])),
+   add_day_name = Table.AddColumn(add_month_name, "Day Name", each DateTime.ToText(DateTime.From([Date]), [Format = "ddd"])),
    add_day_of_week = Table.AddColumn(add_day_name, "Day of Week", each Date.DayOfWeek([Date])),
    // In Power Query Sunday is 0 and Saturday is 6, so weekend days are 0,6
    add_is_weekend = Table.AddColumn(add_day_of_week, "Is Weekend", each List.ContainsAny({0,6}, {Date.DayOfWeek([Date])})),
@@ -31,4 +34,4 @@ let
          {"Quarter", type text}
       })
 in
-    add_quarter
+    transform_column_types
