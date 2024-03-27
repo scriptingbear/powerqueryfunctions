@@ -1,4 +1,5 @@
 // fxGetMatchingText()
+// © 2024 Adiv Abramson
 // Find values in list of search terms from input text.
 // For this exercise, the input text is a string that may contain
 // one or more items in the search_terms list.
