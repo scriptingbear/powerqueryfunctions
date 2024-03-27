@@ -1,0 +1,47 @@
+// fxGetMatchingText()
+// Find values in list of search terms from input text.
+// For this exercise, the input text is a string that may contain
+// one or more items in the search_terms list.
+// The solution is to split the input string on each value
+// in the search_terms list. If the resulting list contains
+// more than one item, the input string contains the search term.
+// If the resulting list contains only one item, the input string
+// does not contain the search term.
+// [03/27/2024]: Now sorting list in ascending alphabetical order
+
+(input as text, search_terms as list) as list =>
+
+let
+    matching_terms = List.Accumulate(
+                                        search_terms,
+                                        // The "seed" is an empty list to which
+                                        // matching search terms will be added.
+                                        {},
+                                        // The accumulator function is invoked for each item in the
+                                        // search_terms list. It splits the input text on the current
+                                        // value in the search_terms list. If the resulting list contains
+                                        // a single item, the current search term was NOT found in the input text.
+                                        // If the resulting list contains more than one item, that indicates
+                                        // that the current value in search_terms exists in the input text.
+                                        (state,current) => 
+                                              let 
+                                                 result =     
+                                                      let 
+                                                         split_text = Text.Split(input, current),
+                                                         matched = if List.Count(split_text) = 1 then false else true,
+                                                         current_term = if matched then current else null,
+                                                         // If the current item in search_terms exists in input text
+                                                         // add it to the initially empty "seed" list, otherwise add
+                                                         // a null value, which will be removed subsequently.
+                                                         add_item = state & {current_term} 
+                                                      in  
+                                                        add_item
+                                                
+                                            in 
+                                               result
+                                            
+                                    ),
+    removed_nulls = List.RemoveNulls(matching_terms),
+    sorted_list = List.Sort(removed_nulls)
+in
+    sorted_list
