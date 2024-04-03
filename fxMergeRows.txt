@@ -1,0 +1,34 @@
+/* fxMergeRows()
+   © 2024 Adiv Abramson
+   Merges the contents of the specified row in the specified table 
+   with the contents of the next row.
+   Both rows should contain only text values or nulls.
+*/
+
+(data_table as table, row_index as number) as any =>
+
+let
+    // Create a list from the values in the specified row and the row beneath it
+    next_row_index = row_index + 1,
+    row_values = Record.ToList(data_table{row_index}),
+    next_row_values = Record.ToList(data_table{row_index + 1}),
+    // Zip the lists so that each element of the resulting list
+    // contains pairs of values from each column of the source table
+    zip_lists = List.Zip({row_values, next_row_values}),
+    // Now convert the list of lists to a table with a single column [Column1],
+    // which will be extracted to values with a default separator of a blank
+    table_of_lists = Table.FromList(zip_lists, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    combine_row_values = Table.TransformColumns(table_of_lists, {"Column1", each Text.Combine(List.Transform(_, Text.From), " "), type text}),
+    // Transpose the table so that the resulting table's column names match the source table column names
+    // This may work only if default column names exist in the source table. Must account for when source table 
+    // columns have already been renamed
+    transpose_table = Table.Transpose(combine_row_values, Table.ColumnNames(data_table)),
+    // Now insert the newly created transposed table at the same row index. This
+    // is inserting a row containing values merged from the original two rows of the source table
+    // and then remove the row beneath the newly inserted row from the source table 
+    insert_row = Table.InsertRows(data_table, row_index, {transpose_table{0}}),
+    delete_source_table_rows = Table.RemoveRows(insert_row, row_index + 1, 2)
+
+
+in
+    delete_source_table_rows
