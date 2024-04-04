@@ -1,0 +1,46 @@
+/*
+  fxCombineWorkSheets()
+  © 2024 Adiv Abramson
+
+   Original data is a table consisting of a [Date] column, which is all that
+   remains after the #"Remove Other Columns" step.
+   We convert this into a  list of Table objects corresponding to the worksheets in
+   the source Excel file. Each worksheet can have a different number of columns.
+   We want to combine them into a single table with all column names present.
+   The Table.Combine() function will append the tables, matching by column name
+   and adding new columns to tables so that all tables will have the same 
+   set of columns. 
+   Optionally replace null values in combined table with specified value
+*/
+
+(tables as table, optional default_value as any) as table =>
+let
+    // Source is {Table1, Table2, Table3,...}
+    Source = tables[Data],
+    combined_tables = List.Accumulate(
+                                        // Get list of all of the source tables except the first one
+                                        List.Range(Source,1),
+                                        // "Seed" is first table in list. We'll be adding 
+                                        // the remaining table to it.
+                                        Table.PromoteHeaders(Source{0}, [PromoteAllScalars=true]),
+                                        (state, current) =>
+                                           Table.Combine({state, Table.PromoteHeaders(current, [PromoteAllScalars=true])})
+                                     ),
+   /* To filter out rows that contain only nulls, the following statement appears to do the following:
+      1. Iterate through each row of the table, which is actually a Record object: [Field1 = Value1, Field2 = Value2,...]
+      2. Convert the record to a List object: {Value1, Value2,...}
+      3. Remove elements of the list that are either "" or null
+      4. Check if the resulting list is empty
+      5. Keep the current record only if the resulting list is NOT empty
+   */
+   remove_nulls =  Table.SelectRows(combined_tables, each not List.IsEmpty(List.RemoveMatchingItems(Record.FieldValues(_), {"", null}))),
+   replace_nulls = if default_value <> null then
+                     Table.ReplaceValue(remove_nulls,
+                                             null, 
+                                             default_value,
+                                             Replacer.ReplaceValue,
+                                             Table.ColumnNames(remove_nulls))
+                   else
+                      remove_nulls
+in
+    replace_nulls
