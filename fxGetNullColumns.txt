@@ -1,27 +1,30 @@
-// fxGetNullColumns()
-/*
+/* fxGetNullColumns()
+   Â© 2024 Adiv Abramson
    Determine which columns in specified table contain only null, 
    so that they can be removed from the table. This will enable dynamic processing 
    because now the columns to be deleted will not be hard coded.
-   NEW CODE: 08/12/2023 - Now using optional parameter to search for 
+   NEW CODE: Now using optional parameter to search for 
    blanks instead of nulls.
    Also now storing number of rows of table in a variable so it doens't
    have to be recalculated in the List.Accumulate() function.
+
+   [NEW CODE: 07/26/2026] Using built-in function to remove nulls from list
 */
 
-(data_table as table, optional search_for_blanks as logical) =>
+(data_table as table, optional search_for_blanks as logical) as list =>
 let
-    Record_Count = Table.RowCount(data_table),
-    Search_Value = if search_for_blanks = null or not search_for_blanks then null else "",
-    Source = List.Accumulate(
-              Table.ColumnNames(data_table),
+    buffered_table = Table.Buffer(data_table),
+    record_count = Table.RowCount(buffered_table),
+    search_value = if search_for_blanks = null or not search_for_blanks then null else "",
+    check_columns = List.Accumulate(
+              Table.ColumnNames(buffered_table),
               {},
               (state, current) => 
-                 if List.Count(List.Select(Table.Column(data_table, current), 
-                               each _ = Search_Value)) = 
-                               Record_Count    //List.Count(Table.Column(data_table, current)) 
+                 if List.Count(List.Select(Table.Column(buffered_table, current), 
+                               each _ = search_value)) = 
+                               record_count    
                                then state & {current} else state & {null}     
                            ),
-    Null_Columns = List.Select(Source, each _ <> null)
+    null_Columns = List.RemoveNulls(check_columns) //List.RemoveNulls(check_columns)
 in
-    Null_Columns
+    null_Columns
