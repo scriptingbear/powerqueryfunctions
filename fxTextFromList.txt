@@ -1,0 +1,69 @@
+/*  fxTextFromList()
+
+    A function to return a text representation of  a list of primitive data type, 
+    similar to fxTextFromRecord().
+
+    Parameters: input_list - must not be empty and must not contain structured data. Null values
+                             will be represent by the string "null" in the output
+
+                 display_vertically - optionally display record with one line per list item
+        
+
+*/
+
+
+(input_list as list, optional display_vertically as logical) as text =>
+
+let 
+    cr_lf = "#(cr)" & "#(lf)",
+    tab = "#(tab)",
+    is_empty_list = input_list = {},
+    use_line_breaks = display_vertically ?? false,
+    check_list_values = if not is_empty_list then 
+                                List.Accumulate(
+                                         input_list,
+                                         {false},
+                                         (state, current) =>
+                                                //state & {(current is record) or (current is list)}
+                                                //Try this method instead, where we don't build a list
+                                                //of booleans, but simply update the single value in the
+                                                //"seed", i.e. {false}
+                                                {state{0} or (current is record) or (current is list)}
+
+                                )
+                            else
+                                //Explicitly return a "fake" list of true, so is_valid_list will evaluate to false
+                                {true},
+    is_valid_list = not List.Contains(check_list_values, true),
+    list_as_text = if is_valid_list then
+                        let 
+                            delimited_text_items_in_list = 
+                                List.Accumulate(
+                                                input_list,
+                                                {},
+                                                (state, current) =>
+                                                    let 
+                                                        //Delimit text values with quotes
+                                                        is_text = current is text,
+                                                        add_quotes =
+                                                            if is_text then 
+                                                                """" & current & """"
+                                                            else 
+                                                                Text.From(current),
+                                                        updated_element = state & {(if use_line_breaks then tab else "") & add_quotes}
+                                                    in  
+                                                        updated_element
+                                                    
+                                                ),
+                            add_braces = "{" 
+                                & (if use_line_breaks then cr_lf else "")
+                                & Text.Combine(delimited_text_items_in_list, (if use_line_breaks then "," & cr_lf else ", ")) 
+                                & (if use_line_breaks then cr_lf else "")
+                                & "}"
+                        in 
+                            add_braces
+                    else  
+                        "{}"
+
+in 
+    list_as_text

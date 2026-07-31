@@ -1,0 +1,45 @@
+/*  fxDataTypeAsText()
+
+    It's a royal pain in Power Query to do something as simple as get the datatype of a value as text. 
+    This function addresses that shortcomng.
+
+    Parameters: value - any data value that's not null
+
+*/
+
+(value as any) =>
+
+let
+    is_valid_value = value <> null,
+    data_type_tests = {
+                    Value.Is(value, Number.Type),
+                    Value.Is(value, Text.Type),
+                    Value.Is(value, Record.Type),
+                    Value.Is(value, List.Type),
+                    Value.Is(value, Date.Type),
+                    Value.Is(value, DateTime.Type),
+                    Value.Is(value, Table.Type),
+                    Value.Is(value, Logical.Type),
+                    true //fallback
+
+                },
+    data_type = {
+                    "number",
+                    "text",
+                    "record",
+                    "list",
+                    "date",
+                    "datetime",
+                    "table",
+                    "logical"
+
+
+                },
+    
+    data_type_tests_index = List.PositionOf(data_type_tests, true),
+    data_type_as_text = if is_valid_value then 
+                            try data_type{data_type_tests_index} otherwise ""
+                        else 
+                            error Error.Record("Data mismatch", "The argument supplied is not of type text, record, list, table, logical, date, or datetime")
+in
+    data_type_as_text
