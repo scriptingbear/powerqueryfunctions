@@ -1,0 +1,47 @@
+/*
+    fxAutoAppendTable()
+    A function to add a table to itself the specified number of times. 
+    This function repeats rows in place. Regular appending operation may require additional steps 
+    to order the rows so that identical rows appear in contiguous blocks. This function eliminates
+    that additional work.
+
+    Parameters: repeat - number of times to add a table to itself; alternatively, a list of 
+                         labels can be use to identify the duplicated rows
+                retain_repeat_index - optionally preserve [Repeat Index Column], by default it is removed
+    
+    [NEW CODE 07/31/2026] - repeat parameter now supports either a number or a list of labels, which can include null values
+
+*/
+
+(input_table as table, repeat as any, optional retain_repeat_index as logical) as table =>
+
+let
+    //Validations
+    input_table_empty = Table.RowCount(input_table) = 0,
+    repeat_is_valid = (repeat is number) or (repeat is list),
+    auto_append_table = if not input_table_empty and repeat_is_valid then 
+                            let 
+                                add_column = Table.AddColumn(input_table, "Repeat Index", each if repeat is number then {1..repeat}
+                                                             else repeat),
+                                expand_list_column = Table.ExpandListColumn(add_column, "Repeat Index"),
+                                //Now using coalesce operator for less verbose code
+                                keep_col = retain_repeat_index ?? false,
+                                remove_index_col = if not keep_col then 
+                                                        Table.RemoveColumns(expand_list_column, {"Repeat Index"}) 
+                                                    else 
+                                                        //Convert column type from any to whole number
+                                                        //I could pass the function a single list, but it's better
+                                                        //to pass a list of lists, as per the function spec, and to
+                                                        //make this function future proof and scalable, in case another
+                                                        //temp field is added to the logic.
+                                                        if repeat is number then
+                                                            Table.TransformColumnTypes(expand_list_column, {{"Repeat Index", Int64.Type}})
+                                                        else 
+                                                            Table.TransformColumnTypes(expand_list_column, {{"Repeat Index", type text}})
+                            in 
+                                remove_index_col
+                        else 
+                            //Return original table
+                            input_table
+in
+    auto_append_table
