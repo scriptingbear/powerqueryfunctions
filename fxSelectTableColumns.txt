@@ -11,6 +11,9 @@
                                   with the substring in the function's definition, contains a string representing a 
                                   single month’s abbreviation, or is a list of month abbreviations
 
+    See qryTestfxSelectTableColumns file for code to generate various predicate functions with which to invoke
+    fxSelectTableColumns().
+
 
 */
 
