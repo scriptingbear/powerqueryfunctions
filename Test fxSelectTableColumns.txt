@@ -1,0 +1,190 @@
+/*  Test fxSelectTableColumns()
+
+    Try creating functions that return a valid list of 
+    column names for a given table, e.g. TestTable_1.
+
+    Column headers for TestTable_1:
+
+    Product	Color	Category	31-Jan-22	28-Feb-22	31-Mar-22	30-Apr-22	31-May-22	30-Jun-22
+
+
+*/
+
+
+let
+    //Case #1 - return fixed, single element list [WORKED AS EXPECTED]
+    /*
+    my_func = () =>
+                    let 
+                        Source = {"Product"}
+                    in 
+                        Source
+    */
+
+
+    /*Case #2 - return list of columns beginning with "31" 
+        Got an error when I tried to assign a return type to the anonymous function, e.g. () as list =>
+        my_func(), as defined here, isn't selecting columns; it's returning a list of columns. 
+        Want a function to act as a SELECTOR that the calling function will use to determine
+        which columns to select. As currently defined, my_func() has knowledge of the table and its
+        column names, which does not align with the objective of creating a function that is agnostic. [DID NOT WORK AS EXPECTED]
+    */
+    /*
+    my_func = () =>
+                    let 
+                        Source = List.Select(Table.ColumnNames(TestTable_1), each Text.StartsWith(_, "31"))
+                    in 
+                        Source
+    */
+
+    /*Case #3 - want calling function to supply the table instead of hard coding table in the function we're passing to 
+        the calling function.
+
+        Can I use the "_" place holder here and then the calling function can supply the actual table? That would
+        be a huge improvement, since the function would now be "agnostic" in re the table it is applied to. NOPE!
+
+        At least for this case, in which the calling function is selecting table columns based on the output of my_func,
+        the function signature for my_func() is (column_name as text), since the calling function will supply a list of 
+        column names from the table on which it is invoked. The function being passed to the calling function
+        doesn't have to know the name of the table in advance, as was the case
+        in the previous test.  [WORKED AS EXPECTED]
+
+        This time, assigning a return type to the function is OK.
+    */
+
+    /*
+    my_func = (column_name as text) as logical =>
+                    let 
+                        Source = Text.StartsWith(column_name, "31")
+                    in  
+                        Source
+    */
+
+
+    /*Case #4 - a true test of passing different functions with the same signature to the calling function
+                Here, we use a random number between 28 and 31. Since no column names in TestTable_1 begin
+                with "29", a "column" is returned with just row numbers and no content. However, this is expected
+                behavior and future proofs the function, since if a last-day-of-month column beginning with 29
+                is ever added to TestTable_1, it will be picked up by my_func_29().
+                [WORKED AS EXPECTED]
+
+    */
+    
+    /*
+    bottom_date_num = 28,
+    top_date_num = 32, //Use 32 because no random number => 31 will ever be generated if top_date_num is 31
+    date_nums = {bottom_date_num..top_date_num},
+    random_date_num = Number.IntegerDivide(Number.RandomBetween(bottom_date_num, top_date_num), 1),
+    my_func_28 = (column_name as text) =>
+                        let 
+                            Source = Text.StartsWith(column_name, "28")
+                        in  
+                            Source,
+    
+    my_func_29 = (column_name as text) =>
+                        let 
+                            Source = Text.StartsWith(column_name, "29")
+                        in  
+                            Source,
+    
+    my_func_30 = (column_name as text) =>
+                        let 
+                            Source = Text.StartsWith(column_name, "30")
+                        in  
+                            Source,
+
+    my_func_31 = (column_name as text) =>
+                        let 
+                            Source = Text.StartsWith(column_name, "31")
+                        in  
+                            Source,
+    
+    //The function to be passed to the calling function is determined by the position of
+    //the some_random_num in date_numns, e.g. if 30 is generated, my_func_30() is selected because
+    //the index of 30 in date_nums is 2, and the index of my_func_30 in func_list is also 2.
+    func_list = {
+                    my_func_28,
+                    my_func_29,
+                    my_func_30,
+                    my_func_31
+                },
+    random_date_num_index = List.PositionOf(date_nums, random_date_num),
+    passed_function = func_list{random_date_num_index}
+    */
+
+    /*Case #5 - Inspired by Microsoft CoPilot, I will now try to create a function factory to dynamically compose the
+      column selector function, which, if I can do this, will eliminate the need for so many essentially identical
+      column selector functions. I won't need a list of discrete functions to index into anymore. The function
+      factory will compose the "predicate" function dynamically, based on the random_date_num as its parameter.
+      This is very interesting, challenging, elegant, and FUN! [WORKED AS EXPECTED]
+
+    */
+    /*
+    bottom_date_num = 28,
+    top_date_num = 32, //Use 32 because no random number => 31 will ever be generated if top_date_num is 31
+    date_nums = {bottom_date_num..top_date_num},
+    random_date_num = Number.IntegerDivide(Number.RandomBetween(bottom_date_num, top_date_num), 1),
+    func_factory = (date_num as number) as function =>
+            let 
+                my_func = (column_name) as logical =>
+                    let  
+                        Source = Text.StartsWith(column_name, Text.From(date_num))
+                    in 
+                        Source
+            in 
+                my_func,
+    passed_function = func_factory(random_date_num)
+    */
+
+    /*Case #6 - design function factory to return a semantically different inner function depending on the datatype of
+                the parameter passed to the outer function. After I wrote and tested the code. CoPilot said that
+                "Case #6 demonstrates type‑directed structural polymorphism via a closure factory.".
+                
+                OK, I'll accept that, because it sounds sophisticated although I haven't a clue as to what
+                it actually means. :) [WORKED AS EXPECTED]
+    */
+
+    bottom_date_num = 28,
+    top_date_num = 32, //Use 32 because no random number => 31 will ever be generated if top_date_num is 31
+    date_nums = {bottom_date_num..top_date_num},
+    random_date_num = Number.IntegerDivide(Number.RandomBetween(bottom_date_num, top_date_num), 1),
+    func_factory = (criteria as any) as function => //now accepting a single number or a text value or a list
+            let 
+                my_func = (column_name) as logical =>
+                    let  
+                        set_func_type = 
+                            if criteria is number then //original version of predicate function
+                                let 
+                                    Source = Text.StartsWith(column_name, Text.From(criteria))
+                                in 
+                                    Source
+                            else 
+                                if criteria is text then //Use to select column by month name, e.g. "Apr" or "Dec"
+                                    let 
+                                        Source = Text.Contains(column_name, criteria)
+                                    in 
+                                        Source 
+                                else 
+                                    if criteria is list then //Use to select months of a quarter, e.g. "Jan", "Feb", "March"
+                                        let 
+                                            Source = fxTextContainsAny(column_name, criteria)[FoundAny]
+                                        in 
+                                            Source 
+                                    else 
+                                        error Error.Record("Invalid input", "func_factory accepts number, text, or list only")
+                    in 
+                        set_func_type
+
+            in 
+                my_func,
+    criteria_list = {30, "Aug", {"Jan", "Feb", "Mar"}, {"Dec", "Jan", "Oct", "May"}},
+    //passed_function = func_factory(random_date_num)
+    //passed_function = func_factory(criteria_list{0})
+    //passed_function = func_factory(criteria_list{1})
+    //passed_function = func_factory(criteria_list{2})
+    passed_function = func_factory(criteria_list{3})
+
+
+in
+   
+    (fxSelectTableColumns(TestTable_1, passed_function))
