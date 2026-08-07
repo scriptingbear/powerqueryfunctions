@@ -1,0 +1,25 @@
+/*  fxSelectTableColumns()
+
+    A function to select columns from a table using a function instead of a hard coded list. 
+    The function will be used by List.Select() to return a list to feed Table.SelectColunns,
+    which allows for dynamic column selection instead of hard coded column names.
+
+    Parameters
+                input_table - a table object
+                column_selector - a logical function taking a single text paramerter, 
+                                  i.e. a column name that indicates if the column name starts 
+                                  with the substring in the function's definition, contains a string representing a 
+                                  single month’s abbreviation, or is a list of month abbreviations
+
+    See qryTestfxSelectTableColumns file for code to generate various predicate functions with which to invoke
+    fxSelectTableColumns().
+
+
+*/
+
+(input_table as table, column_selector as function) as table =>
+let
+    table_column_names = Table.ColumnNames(input_table),
+    selected_table_columns = Table.SelectColumns(input_table, List.Select(table_column_names, each column_selector(_)))
+in
+    selected_table_columns
