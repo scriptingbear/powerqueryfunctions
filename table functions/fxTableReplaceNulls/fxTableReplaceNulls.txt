@@ -1,0 +1,144 @@
+/*  fxTableReplaceNulls()
+
+    A custom function to replace all the null values in a table.
+    Default values for text, number, and logical columns will
+    be applied unless optional custom values are provided. 
+
+    Parameters:
+                data - a non empty table
+                replace_info - optional non-empty record with field names and custom replacements
+                               if missing or null, use default text, number, and logical
+                               replacement values
+      
+      N.B. Proper casing is enforced regarding fields in the record: they much match the 
+           table column names exactly, or Power Query will throw an error.
+           Interestingly, names of non-existent table columns in the record are ignored and
+           no errors are thrown. 
+           It is possible to specify a replacement value of a different data type for a given
+           column. This will convert the column to general format.
+               
+
+*/
+
+(data as table, optional replace_info as record) as any =>
+
+let
+    //Validations
+    data_ok = (not Table.IsEmpty(data))  and (Table.ColumnCount(data) > 0),
+    replace_info_ok = if (not replace_info = null) and (Record.FieldCount(replace_info) <> 0) then true else false,
+
+    use_default_replacers = if replace_info = null then true else false,
+
+    default_text_replacer = "",
+    default_number_replacer = 0,
+    default_logical_replacer = false,
+
+    table_schema = Table.Schema(data),
+    all_text_columns = Table.SelectRows(table_schema, each [Kind] = "text")[Name],
+    all_number_columns = Table.SelectRows(table_schema, each [Kind] = "number")[Name],
+    all_logical_columns = Table.SelectRows(table_schema, each [Kind] = "logical")[Name],
+
+    custom_replace_columns = Record.FieldNames(replace_info),
+    custom_replace_text_columns = 
+      List.Intersect({custom_replace_columns, all_text_columns}, Comparer.OrdinalIgnoreCase),
+    custom_replace_number_columns = 
+      List.Intersect({custom_replace_columns, all_number_columns}, Comparer.OrdinalIgnoreCase),
+    custom_replace_logical_columns = List.Intersect({custom_replace_columns, all_logical_columns}, Comparer.OrdinalIgnoreCase),
+
+    //Encapsulate logic for processing each type of replacement in a standalone
+    //function, for more readable and maintainable code
+    //Otherwise there will be too many indented levels, too many similar labels for 
+    //complex expressions. By placing each type of logic in its own function,
+    //code is also easier to write.
+    fxReplaceWithDefaults = 
+            (input_table as table, field_names as list, default_replace_value as any) as table =>
+            let 
+                  replace_values = 
+                        if not List.IsEmpty(field_names) then 
+                              Table.ReplaceValue(input_table, null, default_replace_value, 
+                              Replacer.ReplaceValue, field_names)
+                        else 
+                              input_table
+
+            in 
+                  replace_values,
+      
+      fxCallDefaultReplacers =
+            () as table =>
+                   let 
+                        default_replaced_text_nulls = 
+                              fxReplaceWithDefaults(data, all_text_columns, default_text_replacer),
+                        default_replaced_number_nulls = 
+                              fxReplaceWithDefaults(default_replaced_text_nulls, all_number_columns, default_number_replacer),
+                        default_replaced_logical_nulls = 
+                              fxReplaceWithDefaults(default_replaced_number_nulls, all_logical_columns, default_logical_replacer)
+                  in 
+                        default_replaced_logical_nulls,
+
+
+
+      fxCustomTextFieldReplacer =
+            (input_table as table) as table =>
+                  if custom_replace_text_columns <> {} then
+                        List.Accumulate(
+                              custom_replace_text_columns,
+                              input_table,
+                              (state, current) =>
+                              let 
+                                    custom_field_replacer = Record.Field(replace_info, current),
+                                    replaced_custom_field = 
+                                          Table.ReplaceValue(state, null, custom_field_replacer, 
+                                          Replacer.ReplaceValue, {current})
+                              in 
+                                    replaced_custom_field)
+                  else 
+                        input_table,
+
+      fxCustomNumberFieldReplacer =
+            (input_table as table) as table =>
+                  if custom_replace_number_columns <> {} then
+                        List.Accumulate(
+                              custom_replace_number_columns,
+                              input_table,
+                              (state, current) =>
+                              let 
+                                    custom_field_replacer = Record.Field(replace_info, current),
+                                    replaced_custom_field = 
+                                          Table.ReplaceValue(state, null, custom_field_replacer, 
+                                          Replacer.ReplaceValue, {current})
+                              in 
+                                    replaced_custom_field)
+                  else 
+                        input_table,
+
+      fxCustomLogicalFieldReplacer =
+            (input_table as table) as table =>
+                  if custom_replace_logical_columns <> {} then 
+                        List.Accumulate(
+                              custom_replace_logical_columns,
+                              input_table,
+                              (state, current) =>
+                              let 
+                                    custom_field_replacer = Record.Field(replace_info, current),
+                                    replaced_custom_field = 
+                                          Table.ReplaceValue(state, null, custom_field_replacer, 
+                                          Replacer.ReplaceValue, {current})
+                              in 
+                                    replaced_custom_field)
+                  else 
+                        input_table,
+
+
+    replaced_nulls = 
+            if data_ok and use_default_replacers then
+                 fxCallDefaultReplacers()
+            else 
+                 let 
+                        replace_text_fields = fxCustomTextFieldReplacer(data),
+                        replace_number_fields = fxCustomNumberFieldReplacer(replace_text_fields),
+                        replace_logical_fields = fxCustomLogicalFieldReplacer(replace_number_fields)
+                  in 
+                        replace_logical_fields  
+                  
+in
+    replaced_nulls
