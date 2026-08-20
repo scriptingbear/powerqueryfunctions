@@ -1,0 +1,31 @@
+/*  fxGenerateCharList()
+
+    Inspired by Exercise 1, in which a list of lowercase letters was to be generated, 
+    this custom function extends that functionality to allow a list of alphabetic characters 
+    to be generated, optionally in descending order.
+
+    Parameters - start_char - single character, cannot be "" or non printable
+                 end_char - single character, cannot be "" or non printable
+                 reverse_order - optional, logical, default is false
+
+
+*/
+
+(start_char as text, end_char as text, optional reverse_order as logical) as list =>
+
+let
+    //Validations
+    start_char_ok = Text.Length(start_char) = 1 and List.Contains({36..126}, Character.ToNumber(start_char)),
+    end_char_ok = Text.Length(end_char) = 1 and List.Contains({36..126}, Character.ToNumber(end_char)),
+    //Get character code for character inputs
+    min_char_num = List.Min({Character.ToNumber(start_char), Character.ToNumber(end_char)}),
+    max_char_num = List.Max({Character.ToNumber(start_char), Character.ToNumber(end_char)}),
+    //Generate list of sequential numbers
+    generated_number_list = {min_char_num..max_char_num},
+    //Optionally reverse the list
+    reorder_list = reverse_order ?? false,
+    reversed_num_list = if reorder_list then List.Reverse(generated_number_list) else generated_number_list,
+    transformed_num_list = List.Transform(reversed_num_list, each Character.FromNumber(_))
+    
+in
+    transformed_num_list
