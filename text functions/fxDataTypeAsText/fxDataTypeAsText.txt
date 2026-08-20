@@ -1,0 +1,108 @@
+/*  fxDataTypeAsText()
+    ©2026
+
+    It's a royal pain in Power Query to do something as simple as get the datatype of a value as text. 
+    This function addresses that shortcoming.
+
+    Parameters: value - any data VALUE that's not null or any TYPE object
+
+    [NEW CODE: 08/18/2026] - Now testing if value TYPE is nullable, if so,
+                             return "nullable " & <value type>
+                             If value TYPE is non nullable, return
+                             "<value type>"
+
+
+*/
+
+
+
+
+(value as any) as text =>
+
+let
+    
+    is_valid_value = value <> null,
+    data_type_tests = {
+                    //For VALUES
+                    Value.Is(value, Number.Type),
+                    Value.Is(value, Text.Type),
+                    Value.Is(value, Record.Type),
+                    Value.Is(value, List.Type),
+                    Value.Is(value, Date.Type),
+                    Value.Is(value, DateTime.Type),
+                    Value.Is(value, Table.Type),
+                    Value.Is(value, Logical.Type),
+                    Value.Is(value, Function.Type),
+
+                    //For non nullable TYPES
+                    if Type.IsNullable(value) then false else Type.Is(value, type number),
+                    if Type.IsNullable(value) then false else Type.Is(value, type text),
+                    if Type.IsNullable(value) then false else Type.Is(value, type record),
+                    if Type.IsNullable(value) then false else Type.Is(value, type list),
+                    if Type.IsNullable(value) then false else Type.Is(value, type date),
+                    if Type.IsNullable(value) then false else Type.Is(value, type datetime),
+                    if Type.IsNullable(value) then false else Type.Is(value, type table),
+                    if Type.IsNullable(value) then false else Type.Is(value, type logical),
+                    if Type.IsNullable(value) then false else Type.Is(value, type function),
+
+                    //For nullable TYPES
+                    if Type.IsNullable(value) then Type.Is(value, type nullable number) else false,
+                    if Type.IsNullable(value) then Type.Is(value, type nullable text) else false,
+                    if Type.IsNullable(value) then Type.Is(value, type nullable record) else false,
+                    if Type.IsNullable(value) then Type.Is(value, type nullable list) else false,
+                    if Type.IsNullable(value) then Type.Is(value, type nullable date) else false,
+                    if Type.IsNullable(value) then Type.Is(value, type nullable datetime) else false,
+                    if Type.IsNullable(value) then Type.Is(value, type nullable table) else false,  
+                    if Type.IsNullable(value) then Type.Is(value, type nullable logical) else false,
+                    if Type.IsNullable(value) then Type.Is(value, type nullable function) else false,
+                    Type.Is(value, type any),
+                    Type.Is(value, type nullable any),
+                    true //fallback
+
+                },
+    data_type = {
+                    //For VALUES
+                    "number",
+                    "text",
+                    "record",
+                    "list",
+                    "date",
+                    "datetime",
+                    "table",
+                    "logical",
+                    "function",
+
+                    //For non nullable TYPES
+                    "number",
+                    "text",
+                    "record",
+                    "list",
+                    "date",
+                    "datetime",
+                    "table",
+                    "logical",
+                    "function",
+            
+                    //For nullable TYPES
+                    "nullable number",
+                    "nullable text",
+                    "nullable record",
+                    "nullable list",
+                    "nullable date",
+                    "nullable datetime",
+                    "nullable table",
+                    "nullable logical",
+                    "nullable function",
+                    "any",
+                    "nullable any"
+
+                },
+    
+    data_type_tests_index = List.PositionOf(data_type_tests, true),
+    data_type_as_text = if is_valid_value then 
+                            try data_type{data_type_tests_index} otherwise ""
+                        else 
+                            error Error.Record("Data mismatch", "The argument supplied is not of type text, record, list, table, logical, date, or datetime")
+
+in
+    data_type_as_text
