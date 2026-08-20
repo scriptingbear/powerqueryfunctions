@@ -1,7 +1,7 @@
 // fxCurrentTime()
 
 // Returns current time based on system date as text.
-// Optional include_designator parameter will add "AM/PM" to the returned value
+// Optionally include_designator parameter will add "AM/PM" to the returned value
 
 (optional include_designator as logical) =>
 let
