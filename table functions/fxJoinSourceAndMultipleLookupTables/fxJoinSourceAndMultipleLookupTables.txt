@@ -1,0 +1,66 @@
+/* fxJoinSourceAndMultipleLookupTables()
+   © 2024 Adiv Abramson
+
+   Automatically join the source and lookup tables, adding the foreign key column 
+   to the source table and eliminating the source column that populated the lookup table.
+   Set the new foreign key column position to that occupied by the lookup_column 
+   prior to its removal.
+
+   Allow up to 10 joins to the source table
+*/
+(source_table as table, 
+                      lookup_column1 as text, lookup_table1 as table, 
+                      optional lookup_column2 as text, optional lookup_table2 as table,
+                      optional lookup_column3 as text, optional lookup_table3 as table,
+                      optional lookup_column4 as text, optional lookup_table4 as table,
+                      optional lookup_column5 as text, optional lookup_table5 as table,
+                      optional lookup_column6 as text, optional lookup_table6 as table,
+                      optional lookup_column7 as text, optional lookup_table7 as table,
+                      optional lookup_column8 as text, optional lookup_table8 as table,
+                      optional lookup_column9 as text, optional lookup_table9 as table,
+                      optional lookup_column10 as text, optional lookup_table10 as table ) as table =>
+
+let
+   // Populate a list of lists that will be iterated. Remove null elements
+   all_join_info = {
+                      {lookup_column1, lookup_table1},
+                      {lookup_column2, lookup_table2},
+                      {lookup_column3, lookup_table3},
+                      {lookup_column4, lookup_table4},
+                      {lookup_column5, lookup_table5},
+                      {lookup_column6, lookup_table6},
+                      {lookup_column7, lookup_table7},
+                      {lookup_column8, lookup_table8},
+                      {lookup_column9, lookup_table9},
+                      {lookup_column10, lookup_table10}
+
+                   },
+    join_info = List.Select(all_join_info, each List.Count(List.RemoveNulls(_)) > 0),
+    source_and_lookup_tables_joined =
+          let
+             joined_tables = List.Accumulate(
+                                                join_info,
+                                                source_table,
+                                                (state, current) =>
+
+                                                let
+                                                   column_names_list = Table.ColumnNames(state),
+                                                   lookup_column = current{0},
+                                                   lookup_table = current{1},
+                                                   lookup_column_index = List.PositionOf(column_names_list, lookup_column),
+                                                   join_source_and_lookup_tables = Table.Join(state, lookup_column, lookup_table, lookup_column, JoinKind.Inner),
+                                                   foreign_key_column_name = List.Last(Table.ColumnNames(join_source_and_lookup_tables)),
+                                                   remove_source_column = Table.RemoveColumns(join_source_and_lookup_tables, {lookup_column}),
+                                                   updated_column_names_list = Table.ColumnNames(remove_source_column),
+                                                   remove_foreign_key_column_from_list = List.Select(updated_column_names_list, each _ <> foreign_key_column_name),
+                                                   add_back_foreign_key_column_name_in_position = List.InsertRange(remove_foreign_key_column_from_list, lookup_column_index, {foreign_key_column_name}),
+                                                   reorder_columns = Table.ReorderColumns(remove_source_column, add_back_foreign_key_column_name_in_position)
+                                                in
+                                                   reorder_columns
+                                             )
+          in
+             joined_tables
+
+
+in
+   source_and_lookup_tables_joined
