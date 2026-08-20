@@ -1,0 +1,76 @@
+/* fxTextMatchAny()
+	©2026
+
+        In Power Query, Text.PositionOf() finds the first, last, or all occurrences
+        of the specified substring in a given input string.
+        Text.PositionOfAny() finds the first, last, or all occurrences of single
+        characters in a list in a given input string.
+        Additionally, Text.PositionOf() has case sensitivity options, whereas
+        Text.PositionOfAny() does not.
+
+        I wanted to try and combine the features of both functions, so that
+        you could search for any number of substrings (not just single characters), in
+        a given input string.
+
+        Parameters:
+                    input_text - a non zero length string
+                    search_texts - a non empty list of non zero length text values
+                    case_sensitivity - true for case sensitive search, false to ignore case
+                    occurrences - {Occurrence.All | Occurrence.First | Occurrence.Last}
+
+
+*/
+
+(input_text as text, search_texts as list, case_sensitivity as logical, occurrences as number) as any =>
+
+let
+    //Validations
+    input_text_ok = input_text <> "",
+    search_texts_ok = (search_texts <> {}) //can't be empty
+                        and (List.NonNullCount(search_texts) = List.Count(search_texts)) //nulls not allowed
+                        and (List.AllTrue(List.Transform(search_texts, each Value.Is(_, Text.Type)))) //contains only text values
+                        and (List.AllTrue(List.Transform(search_texts, each _ <> ""))), //contains no ZLS
+    occurrences_ok = List.Contains({Occurrence.First, Occurrence.Last, Occurrence.All}, occurrences),
+    fxGetMatchPositions = (search_for as text) as any =>
+        //Always find all matches, but return first, last, or all 
+        //as specified in the enclosing function's occurrences argument
+                            let 
+                                find_all = Text.PositionOf(input_text, 
+                                                           search_for, 
+                                                           Occurrence.All, 
+                                                           (if case_sensitivity then Comparer.Ordinal else Comparer.OrdinalIgnoreCase)
+                                                           ),
+                                match_data =
+                                            //Text.PositionOf() returns {} if Occurence.All and text doesn't exist in input_text,
+                                            //but if Occurrence.First, or Occurrence.Last, it returns -1
+                                            if find_all <> {} then 
+                                                if occurrences = Occurrence.First then find_all{0}
+                                                else if occurrences = Occurrence.Last then List.Last(find_all)
+                                                else 
+                                                    find_all
+                                            else 
+                                                null
+                            in 
+                                match_data,
+
+    matches = if input_text_ok and search_texts_ok and occurrences_ok then
+                List.Accumulate(
+                                search_texts,
+                                {},
+                                (state, current) =>
+                                    state & {[SearchText = current, Positions = fxGetMatchPositions(current)]}
+
+
+                )
+            else 
+                null,
+    converted_to_table = if matches <> null then 
+                            Table.FromList(matches, Record.FieldValues, {"Search Text", "Positions"}, null) 
+                            else 
+                                null
+    
+
+    
+
+in
+    converted_to_table
