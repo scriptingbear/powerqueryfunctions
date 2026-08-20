@@ -1,0 +1,17 @@
+// fxExtractMiddleInitial()
+// © 2023 Adiv Abramson
+
+// Try to parse input text and extract middle initial. If text can be split into 3 items
+// then the 2nd item is the middle name or initial. Take first character.
+// If text splits into more than 3 items, such as when last name contains spaces, e.g.
+// "Mark S Sanchez y Perron", assume 2nd element is middle name/initial
+
+(input as any) =>
+
+let
+    Input_Items = if input <> null then Text.Split(input, " ") else {},
+    Item_Count = List.Count(Input_Items),
+    Middle_Initial = if Item_Count >= 3 then Text.Start(Input_Items{1}, 1) else null
+
+in
+    Middle_Initial
