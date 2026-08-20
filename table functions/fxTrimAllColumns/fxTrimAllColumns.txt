@@ -1,0 +1,43 @@
+/* fxTrimAllColumns()
+   © 2024 Adiv Abramson
+   Trim leading, excess internal, and trailing blanks from
+   all text type columns in the specified table
+   DEPENDENCIES: fxTrimAll()
+*/
+
+(data_table as table) as table  =>
+// In this step, the text columns are identified and trimmed of excess blanks.
+let 
+    text_columns = Table.ColumnsOfType(data_table, {type nullable text}),
+    trimmed_table = if text_columns = {} then data_table
+                    else 
+                       let
+                           trim_table = List.Accumulate(
+                                                        text_columns,
+                                                        data_table,
+                                                        // Want to perform 2 transformations on same field
+                                                        (state, current) =>
+                                                            Table.TransformColumns(state,
+                                                                                     {current, each fxTrimAll(_)})
+
+                                                       )
+                    
+
+                       in  
+                          trim_table,
+    
+// In this step, the data type of the trimmed columns is explicitly set to text instead of "any".
+
+transform_table_column_types =
+            let 
+               convert_table_columns = List.Accumulate(
+                                                       text_columns,
+                                                       trimmed_table, 
+                                                       (state, current) =>
+                                                          Table.TransformColumnTypes(state, {current, type text})
+                                                     )
+            in
+               convert_table_columns
+
+in 
+    transform_table_column_types
