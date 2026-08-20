@@ -1,0 +1,11 @@
+// fxCurrentTime()
+
+// Returns current time based on system date as text.
+// Optional include_designator parameter will add "AM/PM" to the returned value
+
+(optional include_designator as logical) =>
+let
+    Format_Spec = if include_designator = null then "hh:mm:ss" else if include_designator then "hh:mm:ss tt" else "hh:mm:ss",
+    Source = Time.ToText(DateTime.Time(DateTime.FixedLocalNow()), Format_Spec)
+in
+    Source
