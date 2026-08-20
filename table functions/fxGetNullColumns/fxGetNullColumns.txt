@@ -1,0 +1,25 @@
+/* fxGetNullColumns()
+	© 2026 Adiv Abramson
+	Determine which columns in specified table contain only null, 
+   	so that they can be removed from the table. This will enable dynamic processing 
+   	because now the columns to be deleted will not be hard coded.
+
+	This is a more streamlined version of the function I wrote in 2024. At that 
+	time I was unaware of table information functions like Table.Profile() and 
+	Table.Schema(), which make analyzing table much easier.
+
+	Parameters:
+                data - non-empty table
+
+
+*/
+
+(data as table) as list =>
+        let 
+            table_profile = Table.Profile(data),
+            //Cannot apply filter directly to table returned by Table.Profile(). Must project the columns
+            //we need and apply filter to just those columns. #weird
+            null_columns = 
+                    Table.SelectRows(table_profile[[Column], [NullCount], [Count]], each [Count] = [NullCount])[Column]
+        in 
+            null_columns
