@@ -1,0 +1,54 @@
+/* fxFindMaxSales
+   Find the maximum sales amount out of all of the Qn columns in the Sales table and 
+   also the name of the Sales person corresponding to the maximum sales amount.
+   Sales table has columns [SALES PERSON], [Q1], [Q2], [Q3], [Q4]
+*/
+
+let
+    column_names = Table.ColumnNames(Sales),
+    // return a Record object consisting of two fields: SalesPerson and MaxSales
+    max_sales_info = List.Accumulate (
+                                        column_names,
+
+                                        // This is the "seed", which will be updated with the max sales out of all
+                                        // "Q" columns and the name of the SalesPerson associated with that value
+                                        [SalesPerson = "", MaxSales = 0],
+
+                                        // This is the accumulator function that iterates through the columns of the Sales
+                                        // table to find the largest sales amount and the SalesPerson associated with it
+                                        (state, current) =>
+                                          let
+                                             // Get a list of the sales amounts in the current "Q" column
+                                             sales_amounts_list = if Text.Contains(current, "Q") then Table.Column(Sales, current) else {},
+
+                                             // Find max value in the current "Q" column
+                                             current_q_max_sales = if sales_amounts_list <> {} then List.Max(sales_amounts_list) else 0,
+
+                                             // Note the position of largest sales amount in the current "Q" column
+                                             current_q_max_sales_position = if current_q_max_sales <> 0 then   
+                                                                               List.PositionOf(sales_amounts_list, current_q_max_sales)
+                                                                               else
+                                                                                 -1,
+                                             // Update the "seed" record defined in the 2nd argument of List.Accumulate()
+                                             // but only if the largest value in the current "Q" column is greater than the 
+                                             // value currently stored in the MaxSales field of the "seed" record defined above
+                                             update_record = if current_q_max_sales > state[MaxSales] then 
+                                                               [SalesPerson = Table.Column(Sales, "SALES PERSON"){current_q_max_sales_position}, 
+                                                                MaxSales = current_q_max_sales]
+                                                             else 
+                                                                [SalesPerson = state[SalesPerson], MaxSales = state[MaxSales]]
+                                             
+                                       in 
+                                           // Return the updated "seed" to the calling statement
+                                           update_record
+
+                                    ),
+    // Convert the record to a table, transpose it, promote headers
+    // and adjust data types for the table fields so it can be loaded
+    // into Excel
+    record_to_table = Record.ToTable(max_sales_info),
+    #"Transposed Table" = Table.Transpose(record_to_table),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Transposed Table", [PromoteAllScalars=true]),
+    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"SalesPerson", type text}, {"MaxSales", Int64.Type}})
+in
+    #"Changed Type"
