@@ -1,0 +1,27 @@
+// fxGetChars()
+// © 2023 Adiv Abramson
+
+// Extract the non-numeric characters from the input string and optionally
+// return unique characters.
+// Everything that is not a digit is considered a character, such as decimal points,
+// punctuation, etc.
+// However optional parameter include_decimal_points determines if the decimal point
+// is treated as part of a number or as a non-numeric character.
+// Now returning a string instead of a list.
+
+(text as text, optional include_decimal_points as logical,  optional distinct_values as logical) as text =>
+
+let
+    // Convert input string to list. Then inspect each character.
+    // If character is NOT in list 0..9, accumulate to output variable
+    mode = if include_decimal_points = null or include_decimal_points = false then false else true,
+    charList = Text.ToList(text),
+    numeric_chars = if mode  then {"0".."9"} else {"0".."9", "."},
+    output = List.Select(charList, 
+                         each not List.ContainsAny({_}, numeric_chars)),
+    final_output = 
+        if distinct_values = null or distinct_values = false then output else List.Distinct(output),
+    convert_list_to_text = Text.Combine(final_output)
+
+in
+    convert_list_to_text
