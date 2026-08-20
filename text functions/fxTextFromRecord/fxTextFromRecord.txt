@@ -1,0 +1,71 @@
+/*  fxTextFromRecord()
+
+    Converts a record containing primitive values to a string of text. 
+    Cannot handle structured values such as lists or records...yet
+
+    Parameters: input_record - must not be empty and must not contain
+                structured data types like lists or records
+
+                display_vertically - optionally display record with one
+                                     line for each key/value pair
+
+
+*/
+
+(input_record as record, optional display_vertically as logical) as text =>
+
+let 
+    cr_lf = "#(cr)" & "#(lf)",
+    tab = "#(tab)",
+    use_line_breaks = display_vertically ?? false,
+    is_empty_record = input_record = [],
+    check_record_values = if not is_empty_record then 
+                                List.Accumulate(
+                                         Record.FieldValues(input_record),
+                                         {},
+                                         (state, current) =>
+                                                state & {(current is record) or (current is list) or (current = null)}
+
+                                )
+                            else
+                                //Explicitly return a "fake" list of true, so is_valid_record will evaluate to false
+                                {true},
+    is_valid_record = not List.Contains(check_record_values, true),
+    record_as_text = if is_valid_record then
+                        let 
+                            record_fieldnames_and_values = List.Zip({Record.FieldNames(input_record), Record.FieldValues(input_record)}),
+                            //Convert {{"A", 1}, {"B", 2}, {"C", 3}} to {"A = 1", "B = 2", "C = 3"}
+                            flattened_record = List.Accumulate(
+                                                record_fieldnames_and_values,
+                                                {},
+                                                (state, current) =>
+                                                    let 
+                                                        //Delimit text values with quotes
+                                                        is_text = current{1} is text,
+                                                        add_quotes =
+                                                            if is_text then 
+                                                                """" & current{1} & """"
+                                                            else 
+                                                                current{1},
+                                                        updated_element = state & 
+                                                                            {
+                                                                                   (if use_line_breaks then tab else "") & 
+                                                                                   current{0} & 
+                                                                                    " = " & 
+                                                                                    Text.From(add_quotes)
+                                                                                    }
+                                                    in  
+                                                        updated_element
+                                                    
+                                                ),
+                            brackets = {if use_line_breaks then "[" & cr_lf else "[", if use_line_breaks then cr_lf & "]" else "]"},
+                            add_brackets = brackets{0} & 
+                                            Text.Combine(flattened_record, "," & (if use_line_breaks then cr_lf  else " ")) &
+                                            brackets{1}
+                        in 
+                            add_brackets
+                    else  
+                        "[]"
+
+in 
+    record_as_text
