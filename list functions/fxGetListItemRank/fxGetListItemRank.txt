@@ -1,0 +1,18 @@
+// fxGetListItemRank()
+// © 2023 Adiv Abramson
+
+// Returns the rank of an item in a list.
+// Distinct list items are ranked from largest to smallest. Thus tie
+// values will be assigned the same rank, similar to T-SQL DENSE_RANK()
+// window function.
+
+(Source as list, item as any) =>
+
+let
+    Distinct_List = List.Distinct(Source),
+    Sorted_List = List.Reverse(List.Sort(Distinct_List)),
+   // Lists are 0 based; ranks are 1 based
+    Item_Position = List.PositionOf(Sorted_List, item), 
+    Result = if Item_Position = -1 then null else Item_Position + 1
+in
+    try Result otherwise null
