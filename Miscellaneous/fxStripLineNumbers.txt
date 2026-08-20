@@ -1,0 +1,49 @@
+/*
+   fxStripLineNumbers()
+   
+   Remove line number labels from a line of VBA code. 
+   Based on rule that valid VBA code must start with a letter or underscore or must be a comment, 
+   which begins with an apostrophe.
+   © 2024 Adiv Abramson
+*/
+
+(input as nullable text) as any =>
+
+let
+   isvalid = if input = null then false 
+             else if Text.Trim(input) <> "" then true else false,
+   has_line_number = if isvalid then 
+                        let
+                           result = try Text.From(Number.From(Text.Start(input,1))) otherwise false,
+                           result2 = if result = null then false else true
+                        in
+                           result2 
+                        else 
+                            false,
+                   
+   first_code_char_position = if isvalid then Text.PositionOfAny(input, {"A".."Z","a".."z","_","'"}) else -1,               
+   char_list = if has_line_number then Text.ToList(input) else "",
+   char_list_size = if char_list <> "" then List.Count(char_list) else 0,
+   char_list_indices = {0..char_list_size-1},
+   remove_line_number = if char_list <> "" then 
+                            List.Accumulate(
+                                char_list_indices,
+                                "",
+                                (state,current) =>
+                                   let
+                                    replace_char = if current < first_code_char_position and List.ContainsAny({char_list{current}}, {"0".."9"}) then true else false,
+                                    accumulate_text = if replace_char then
+                                                        Text.Combine({state, ""})
+                                                    else 
+                                                        Text.Combine({state, char_list{current}}) 
+                                   in
+                                     accumulate_text
+
+                )
+            else
+               input
+
+in
+    remove_line_number
+
+
