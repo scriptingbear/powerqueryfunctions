@@ -4,9 +4,12 @@
     similar to fxTextFromRecord().
 
     Parameters: input_list - must not be empty and must not contain structured data. Null values
-                             will be represent by the string "null" in the output
+                             will be represented by the string "null" in the output
 
                  display_vertically - optionally display record with one line per list item
+    
+    [NEW CODE: 08/19/2026] Corrected bug where null elements in list were being ignored, insted
+                           of being represented by the text literal "null".
         
 
 */
@@ -48,7 +51,9 @@ let
                                                         add_quotes =
                                                             if is_text then 
                                                                 """" & current & """"
-                                                            else 
+                                                            else if current is null then 
+                                                                "null"
+                                                            else
                                                                 Text.From(current),
                                                         updated_element = state & {(if use_line_breaks then tab else "") & add_quotes}
                                                     in  
