@@ -1,0 +1,17 @@
+// fxTrimAll()
+// © 2023 Adiv Abramson
+
+// Power Query seems to be able to trim only leading and trailing spaces.
+// This custom function removes internal excess spaces as well.
+
+(textValue as text) =>
+
+let
+    //Split input string on spaces
+    Source = Text.Split(textValue, " "),
+    //Extract non blank elements of list created in previous step
+    Words = List.Select(Source, each _ <> ""),
+    //Join non-blank elements with a single space
+    TrimmedText = Text.Combine(Words, " ")
+in
+    TrimmedText
