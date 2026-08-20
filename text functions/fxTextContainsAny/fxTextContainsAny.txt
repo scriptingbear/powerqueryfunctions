@@ -1,0 +1,71 @@
+/*  fxTextContainsAny()
+
+    An "upgrade" to Power Query's built-in Text.Contains() function, which accepts a single
+    substring to search for in the input text. My function accepts a list of substrings
+    and will return, among other things, true if any of the substrings is found in the input text. 
+    In a way, my function mimics the List.ContainsAny() function, only supercharged, because it
+    returns a record with all kinds of information. Using my function could make
+    code more succinct, since if a given string needs to be searched for multiple values,
+    only one call to my function will be needed, instead of multiple calls to the native
+    Power Query fuction.
+
+    Parameters: input_text - must not be null or zero length
+                substrings - must not be empty, must contain values that can be coerced to text
+    Returns:    A RECORD with the following structure:
+                [FoundAny as logical, Matching as list, NonMatching as list]
+    
+    
+    
+    true if any of the substrings is found in input_text, otherwise returns false
+    
+
+
+*/
+
+(input_text as nullable text, substrings as list) as record =>
+
+let
+    //Validations
+    is_valid_input_text = input_text <> null and input_text <> "",
+    is_valid_substrings = (substrings <> {}) and(not List.ContainsAny(substrings, {"", null})),
+    result_record = 
+        if is_valid_input_text and is_valid_substrings then 
+            let
+                find_substrings =  List.Accumulate(
+                                    List.Distinct(substrings),
+                                    [FoundAny = {}, Matching = {}, NonMatching = {}],
+                                    (state, current) => 
+                                            let 
+                                                text_contains = Text.Contains(input_text, current),
+                                                updated_record = 
+                                                    let 
+                                                        update_found_any = [FoundAny = state[FoundAny] & {text_contains}, 
+                                                                            Matching = state[Matching], 
+                                                                            NonMatching = state[NonMatching]],
+                                                        //Update other keys in state here
+                                                        update_matching = if text_contains then
+                                                                                [FoundAny = update_found_any[FoundAny], 
+                                                                                 Matching = update_found_any[Matching] & {current}, 
+                                                                                 NonMatching = update_found_any[NonMatching]]
+                                                                          else
+                                                                                [FoundAny = update_found_any[FoundAny], 
+                                                                                 Matching = update_found_any[Matching], 
+                                                                                 NonMatching = update_found_any[NonMatching] & {current}]
+                                                    in 
+                                                        update_matching
+
+                                            in 
+                                                updated_record 
+                ),
+                //Returned record's FoundAny key is a logical value, which List.Contains() provides
+                substrings_found = List.Contains(find_substrings[FoundAny], true),
+                final_record = [FoundAny = substrings_found, 
+                                Matching = find_substrings[Matching], 
+                                NonMatching = find_substrings[NonMatching]]
+            in 
+                final_record
+        else 
+            //Return default record if any input parameter was invalid
+            [FoundAny = false, Matching = {}, NonMatching = {}] 
+in
+    result_record
