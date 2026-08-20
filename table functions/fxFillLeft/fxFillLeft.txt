@@ -1,0 +1,27 @@
+/* fxFillLeft()
+   © 2024 Adiv Abramson
+   Mimics the built in Fill Up feature, but goes from right to left, 
+   filling null cells in the specified row with the closest non null value to the right.
+*/
+
+(data_table as table, row_index as number) as table =>
+let
+    // Grab selected row from specified table and transform it into a list
+    row_to_record = data_table{row_index},
+    record_to_table = Record.ToTable(row_to_record),
+    // A table with columns [Name] and [Value] has been created.
+    // Now fill up the [Value] column
+    fill_up = Table.FillUp(record_to_table, {"Value"}),
+    // Transpose the table so that column names from the source data_table
+    // can be applied to the new "filled left" table just created
+    transpose_table = Table.Transpose(fill_up),
+    // Now promote the first row of the transposed table, which contains the
+    // column names in data_table
+    promote_headers = Table.PromoteHeaders(transpose_table, [PromoteAllScalars=true]),
+    // Now insert the newly created table with promoted headers at the same row index
+    // and then remove the row beneath the newly inserted row from the source table 
+    insert_row = Table.InsertRows(data_table, row_index, {promote_headers{0}}),
+    delete_source_table_row = Table.RemoveRows(insert_row, row_index + 1)
+    
+in
+    delete_source_table_row
