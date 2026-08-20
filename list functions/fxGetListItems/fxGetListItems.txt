@@ -1,0 +1,43 @@
+// fxGetListItems()
+// © Adiv Abramson
+
+// Use List.Generate() to return items from specified list whose
+// indexes are even or odd, as specified.
+// Items returned starting from index = 0 unless otherwise specified.
+
+(Source as list, odd_indexes as logical, optional starting_index as nullable number) as list =>
+
+
+let
+    // Validate input parameters
+    index = if starting_index = null then 
+                0 
+            else 
+                if (starting_index < 0) or (starting_index > List.Count(Source) - 1) then 
+                    null 
+                else 
+                    starting_index,
+    is_valid_list = List.Count(Source) > 0,
+    output = if index = null or not is_valid_list then {}
+                else 
+                    let 
+                        result = List.Generate(
+                                                () => starting_index,
+                                                each _ < List.Count(Source),
+                                                each _ + 1,
+                                                each if odd_indexes then 
+                                                    if Number.IsOdd(_) then 
+                                                        Source{_} 
+                                                    else 
+                                                        null 
+                                                else 
+                                                    if Number.IsEven(_) then 
+                                                        Source{_} 
+                                                    else 
+                                                        null
+                                                ),
+                        removed_nulls = List.RemoveNulls(result)
+                    in 
+                        removed_nulls
+in
+    output
