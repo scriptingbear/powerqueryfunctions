@@ -1,0 +1,70 @@
+/*  fxListUnZip()
+
+    This function "unzips" a list of zips, i.e. reconstructs the source lists.
+    Of course it is impossible to reconstruct source lists of uneven sizes, since
+    every list in items_to_zip must be of the same size, and the function will
+    not accept unequally sized lists. 
+
+    Parameters:
+                items_to_unzip - a list of equally sized non-null lists containing non-null
+                                primatives
+
+
+*/
+
+(items_to_unzip as list) as list =>
+
+
+let
+    //Validations for unzipping
+    items_to_unzip_ok = (items_to_unzip <> {}) 
+                      and 
+                      (List.Count(items_to_unzip) > 1) 
+                      and   
+                      ( 
+                        //Ensure each item is a non empty list and all elements of inner lists are not themselves
+                        //lists or records
+                        List.AllTrue(
+                                        List.Transform(
+                                                        items_to_unzip, 
+                                                        each (_ is list) 
+                                                        and (_ <> {})
+                                                        and (
+                                                               List.AllTrue(
+                                                                   List.Transform(_, 
+                                                                        each List.Contains({type text,
+                                                                                       type number,
+                                                                                       type date,
+                                                                                       type datetime,
+                                                                                       type duration,
+                                                                                       type logical,
+                                                                                       type null},
+                                                                                       Value.Type(_))
+                                                                                    )
+                                                               )
+                                                        )
+                                                     )
+                                    )
+                      )
+                      //Ensure that all lists are of the same size
+                      and (
+                            List.Count(
+                                        List.Distinct(
+                                                        List.Transform(
+                                                                        items_to_unzip, each List.Count(_)
+                                                                      )
+                                                    )
+                                      ) = 1
+                          ),
+    
+result = if items_to_unzip_ok then 
+            let 
+                convert_to_table = Table.FromColumns(items_to_unzip),
+                zip_rows = Table.AddColumn(convert_to_table, "Zipped Row", each Record.ToList(_)),
+                column_of_zipped_lists = zip_rows[Zipped Row]
+            in 
+                column_of_zipped_lists
+        else 
+            {}
+in
+    result
