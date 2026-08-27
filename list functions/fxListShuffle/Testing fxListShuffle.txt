@@ -1,0 +1,99 @@
+/* Testing fxListShuffle() 
+
+    Case #1:
+        input_list: {}
+        output_list #1: {}
+        output_list #2: {}
+        output_list #3: {}
+
+    Case #2:
+        input_list: {1,2}
+        output_list #1: {2, 1}
+        output_list #2: {2, 1}
+        output_list #3: {1, 2}
+
+    Case #3:
+        input_list: {Number.PI, 1000, true, {"A","B"}, {}, "Power Query", #duration(1, 0, 0, 0)}
+        output_list #1: "{1000, true, {"A", "B"}, 3.1415926535897931, {}, "Power Query", 1.00:00:00}"
+        output_list #2: "{{"A", "B"}, {}, 1000, 3.1415926535897931, true, "Power Query", 1.00:00:00}" 
+        output_list #3: "{true, {"A", "B"}, 3.1415926535897931, 1000, {}, "Power Query", 1.00:00:00}"
+
+    Case #4:
+        input_list: {1000, true, "Power Query", #duration(1, 0, 0, 0), Number.PI}
+        output_list #1: {1000, true, 3.1415926535897931, 1.00:00:00, "Power Query"}
+        output_list #2: {"Power Query", 3.1415926535897931, 1.00:00:00, 1000, true}
+        output_list #3: {1.00:00:00, 1000, true, "Power Query", 3.1415926535897931}
+
+    Case #5:
+        input_list: Text.Split("The quick brown fox jumped over the fence.", " ")
+        output_list #1: {"quick", "jumped", "over", "The", "fence.", "brown", "fox", "the"}
+        output_list #2: {"jumped", "over", "brown", "the", "The", "fox", "quick", "fence."}
+        output_list #3: {"brown", "quick", "The", "over", "fox", "jumped", "the", "fence."}
+
+    Case #6:
+        input_list: Text.Split("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", " ")
+        output_list #1: {"ipsum", "consectetur", "dolore", "sed", "dolor", "aliqua.", "incididunt", "labore", "elit,", "adipiscing", "amet,", "eiusmod", "do", "sit", "Lorem", "tempor", "ut", "et", "magna"}
+        output_list #2: {"sit", "eiusmod", "aliqua.", "amet,", "consectetur", "sed", "labore", "ut", "do", "magna", "elit,", "incididunt", "ipsum", "Lorem", "tempor", "adipiscing", "dolor", "et", "dolore"}
+        output_list #3: {"elit,", "adipiscing", "ut", "do", "incididunt", "dolore", "ipsum", "Lorem", "sit", "tempor", "magna", "aliqua.", "amet,", "sed", "dolor", "consectetur", "eiusmod", "labore", "et"}
+
+    Case #7:
+        input_list: {null, null, null, null}
+        output_list #1: {null, null, null, null}
+        output_list #2: {null, null, null, null}
+        output_list #3: {null, null, null, null}
+
+    Case #8:
+        input_list: {[A = "Hellur!", B = Number.PI, C = "M Code"], {"A", 3, false, #date(2026, 8, 26)}, "the quick brown fox"}
+        output_list #1: "{"the quick brown fox", [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], {"A", 3, false, 8/26/2026}}"
+        output_list #2: "{[A = "Hellur!", B = 3.1415926535897931, C = "M Code"], {"A", 3, false, 8/26/2026}, "the quick brown fox"}"
+        output_list #3: "{{"A", 3, false, 8/26/2026}, [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], "the quick brown fox"}"
+
+    Case #9:
+        input_list: {[A = "Hellur!", B = Number.PI, C = "M Code"], {"A", 3, false, #date(2026, 8, 26)}, "the quick brown fox"}
+        output_list #1: {{"A", 3, false, 8/26/2026}, [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], "the quick brown fox"}
+        output_list #2: {{"A", 3, false, 8/26/2026}, [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], "the quick brown fox"}
+        output_list #3: {[A = "Hellur!", B = 3.1415926535897931, C = "M Code"], {"A", 3, false, 8/26/2026}, "the quick brown fox"} <-SAME AS INPUT! :-(
+
+    //After update to reverse list if output is identical to input
+
+    Case #10:
+        input_list: {[A = "Hellur!", B = Number.PI, C = "M Code"], {"A", 3, false, #date(2026, 8, 26)}, "the quick brown fox"}
+        output_list #1: {"A", 3, false, 8/26/2026}, [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], "the quick brown fox"}
+        output_list #2: {"the quick brown fox", [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], {"A", 3, false, 8/26/2026}}
+        output_list #3: {"the quick brown fox", {"A", 3, false, 8/26/2026}, [A = "Hellur!", B = 3.1415926535897931, C = "M Code"]}
+
+
+    Case #11:
+        input_list: {[A = "Hellur!", B = Number.PI, C = "M Code"], {"A", 3, false, #date(2026, 8, 26)}, "the quick brown fox"}
+        output_list #1: {"the quick brown fox", [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], {"A", 3, false, 8/26/2026}}
+        output_list #2: {{"A", 3, false, 8/26/2026}, [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], "the quick brown fox"}
+        output_list #3: {{"A", 3, false, 8/26/2026}, [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], "the quick brown fox"}
+
+
+    Case #12:
+        input_list: {[A = "Hellur!", B = Number.PI, C = "M Code"], {"A", 3, false, #date(2026, 8, 26)}, "the quick brown fox"}
+        output_list #1: {"the quick brown fox", {"A", 3, false, 8/26/2026}, [A = "Hellur!", B = 3.1415926535897931, C = "M Code"]}
+        output_list #2: {"the quick brown fox", [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], {"A", 3, false, 8/26/2026}}
+        output_list #3: {{"A", 3, false, 8/26/2026}, [A = "Hellur!", B = 3.1415926535897931, C = "M Code"], "the quick brown fox"}
+
+ 
+
+
+
+*/
+
+
+
+let
+    my_list = {[A = "Hellur!", B = Number.PI, C = "M Code"], {"A", 3, false, #date(2026, 8, 26)}, "the quick brown fox"},
+   
+        randomized_list = List.Generate(
+                                    () => 1,
+                                    each _ <= 3,
+                                    each _ + 1,
+                                    each fxTextFromList(fxListShuffle(my_list))
+                                  )
+
+
+in
+    fxTextFromList(randomized_list)

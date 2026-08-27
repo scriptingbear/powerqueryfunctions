@@ -1,0 +1,68 @@
+/* fxListShuffle()
+
+    An attempt to mimic the functionality of Python's random.shuffle(<list>).
+
+    Parameters:
+                a non-empty list of values, including structured datatypes
+                like lists, records, and tables
+*/
+
+
+(data_list as list) as list =>
+
+let
+    //Validations
+     data_list_ok = (data_list <> {}),    
+    original_indexes = {0..(List.Count(data_list) - 1)},
+    fxGetRandomIndex = (list_items as list) as number =>
+        let 
+            list_size = List.Count(list_items),
+            //Number.RandomBetween() never returns top number, so must use
+            //List.Count(), which returns 1 more than the highest index in the list
+            random_index = Number.IntegerDivide((Number.RandomBetween(0, list_size)), 1)
+        in 
+            random_index,
+    generate_randomized_indexes = () as list =>
+                        List.Accumulate(
+                            original_indexes,
+                            {},
+                            (state, current) =>
+                                let 
+                                    random_index = if state = {} then 
+                                                        fxGetRandomIndex(original_indexes)
+                                                    else 
+                                                        fxGetRandomIndex(List.Select(original_indexes, each not List.Contains(state, _))),
+                                                
+                                    index_exists = List.Contains(state, random_index),
+                                    add_or_skip_index = if not index_exists then 
+                                                            state & {random_index}
+                                                        else 
+                                                            state
+
+
+                                in 
+                                    add_or_skip_index
+                            ),
+    randomized_list = if data_list_ok then 
+                        let 
+                            randomized_indexes = generate_randomized_indexes(),
+                            //Maybe some indexes from the original list are still missing
+                            missing_indexes = List.Difference(original_indexes, randomized_indexes),
+                            add_missing_indexes = if missing_indexes <> {} then 
+                                                    randomized_indexes & missing_indexes 
+                                                else 
+                                                    randomized_indexes,
+                            rebuilt_list = List.Transform(add_missing_indexes, each data_list{_})
+
+                        in
+                            rebuilt_list
+                    else 
+                        {},
+    //In testing, there are instances where the original list is returned, all elements in the original order.
+    //As a last ditch effort ("list ditch effort", LOL), reverse the list. :-)
+    reject_unchanged = if randomized_list = data_list then 
+                            List.Reverse(randomized_list)
+                        else 
+                            randomized_list
+in 
+    reject_unchanged
