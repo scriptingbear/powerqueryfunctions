@@ -1,0 +1,86 @@
+/*   fxGetPQEnv()
+
+     Uses intrinsic variable #section[Section1] to collect
+     information about objects in the Power Query Editor.
+
+     [NEW CODE: 08/20/2026] Now using fxGetFunctionSignature() to obtain the 
+     signature of custom and built-in signatures, providing more informarion
+     about the contents of the Power Query environment.
+
+     Dependencies:
+		   fxDataTypeAsText()
+         	   fxTextFromList()
+         	   fxTextFromRecord()
+         	   fxGetFunctionSignature()
+
+
+
+*/
+
+
+let
+    cr_lf = "#(cr)" & "#(lf)",
+    env_record = #sections[Section1],
+    //Must remove this query's entry or an error will appear in the results
+    //[NEW CODE: 08/20/2026] Now also removing entry for fxGetFunctionSignatur, although that doesn't throw any errors. Purely cosmetic
+    removed_fields = Record.RemoveFields(env_record, {"fxGetPQEnv", "fxGetFunctionSignature"}),
+    convert_to_table = Record.ToTable(removed_fields),
+    added_type_name = Table.AddColumn(convert_to_table, "Type Name", each Text.Proper(fxDataTypeAsText([Value]))),
+    changed_type = Table.TransformColumnTypes(added_type_name,{{"Type Name", type text}}),
+    reordered_columns = Table.ReorderColumns(changed_type,{"Type Name", "Name"}),
+    renamed_columns = Table.RenameColumns(reordered_columns,{{"Type Name", "Object Type"}}),
+    added_object_info = Table.AddColumn(renamed_columns, "Object Info", 
+      each 
+         if [Object Type] = "Table" then 
+            Table.Profile([Value]) 
+         else 
+            if List.Contains({"List", "Number", "Record", "Text", "Function"}, [Object Type]) then 
+               [Value] 
+            else 
+               
+
+   null),
+    added_object_details = Table.AddColumn(added_object_info, "Object Details", 
+      each 
+      if [Object Type] = "Table" then 
+         let 
+            row_count = [Object Info]{0}[Count],
+            col_count = List.Count([Object Info][Column]),
+            col_names = [Object Info][Column], 
+            info = Text.From(row_count) & " rows by " 
+                  & Text.From(col_count) & " columns"
+         in 
+            info 
+      else 
+         if [Object Type] = "Function" then 
+            //No access to function metadata unless it has been invoked
+            //So return generic descriptor for my custom functions, which
+            //are named "fx" + name
+            //try fxTextFromRecord(Value.Metadata([Object Info])) otherwise null
+            //[NEW CODE: 08/20/2026] Use fxGetSignatureFunction().  
+            if Text.StartsWith([Name], "fx") then 
+               fxGetFunctionSignature([Value])
+             else null
+      else 
+         if [Object Type] = "List" then 
+            let  
+               item_count = List.Count([Object Info]), 
+               info = Text.From(item_count) & " items"
+            in 
+               info 
+         else 
+            if [Object Type] = "Number" then 
+                  [Object Info] 
+            else 
+               if [Object Type] = "Text" then 
+                  [Object Info] 
+               else 
+                  if [Object Type] = "Record" then 
+                     Text.From(Record.FieldCount([Object Info])) & " fields"
+else 
+   null),
+    removed_columns = Table.RemoveColumns(added_object_details,{"Value", "Object Info"}),
+    changed_type_2 = Table.TransformColumnTypes(removed_columns,{{"Object Details", type text}}),
+    sorted_rows = Table.Sort(changed_type_2,{{"Object Type", Order.Ascending}})
+in
+    sorted_rows
