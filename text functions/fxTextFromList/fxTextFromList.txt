@@ -10,6 +10,8 @@
     
     [NEW CODE: 08/19/2026] Corrected bug where null elements in list were being ignored, insted
                            of being represented by the text literal "null".
+    [NEW CODE: 08/26/2026] Now able to represent structured values like lists, records, and tables
+                           in a very simplified and limited way.
         
 
 */
@@ -20,24 +22,44 @@
 let 
     cr_lf = "#(cr)" & "#(lf)",
     tab = "#(tab)",
-    is_empty_list = input_list = {},
+    bad_value = "?val!",  //can't be given a text representation (easily) 
+    is_valid_list = input_list <> {},
     use_line_breaks = display_vertically ?? false,
-    check_list_values = if not is_empty_list then 
-                                List.Accumulate(
-                                         input_list,
-                                         {false},
-                                         (state, current) =>
-                                                //state & {(current is record) or (current is list)}
-                                                //Try this method instead, where we don't build a list
-                                                //of booleans, but simply update the single value in the
-                                                //"seed", i.e. {false}
-                                                {state{0} or (current is record) or (current is list)}
+    fxRecordAsText = (record_object as record) as text =>
+        let  
+            start_bracket = "[",
+            end_bracket = "]",
+            field_names = Record.FieldNames(record_object),
+            field_values = Record.FieldValues(record_object),
+            add_quotes = List.Transform(field_values, each if Value.Is(_, type text) then """" & _ & """" else _),
+            safe_field_values = List.Transform(add_quotes, each try Text.From(_) otherwise bad_value),
+            zipped_items = List.Zip({field_names, safe_field_values}),
+            formatted_items = Text.Combine(List.Transform(zipped_items, each Text.Combine(_, " = ")), ", "),
+            formatted_record = Text.Combine({start_bracket, formatted_items, end_bracket}, "")
+        in 
+            formatted_record, 
 
-                                )
-                            else
-                                //Explicitly return a "fake" list of true, so is_valid_list will evaluate to false
-                                {true},
-    is_valid_list = not List.Contains(check_list_values, true),
+    fxListAsText = (list_object as list) as text =>
+            let 
+                start_brace = "{",
+                end_brace = "}",
+                add_quotes = List.Transform(list_object, each if Value.Is(_, type text) then """" & _ & """" else _),
+                safe_items = List.Transform(add_quotes, each try Text.From(_) otherwise bad_value),
+                formatted_safe_items = Text.Combine(safe_items, ", "),
+                formatted_list = Text.Combine({start_brace, formatted_safe_items, end_brace}, "")
+            in 
+                formatted_list,
+    
+    fxTableAsText = (table_object as table) as text =>
+            let 
+                start_bracket = "[",
+                end_bracket = "]",
+                column_names = Table.ColumnNames(table_object),
+                table_header = Text.Combine(column_names, "|"),
+                formatted_table = Text.Combine({start_bracket, table_header, end_bracket})
+            in 
+                formatted_table,
+
     list_as_text = if is_valid_list then
                         let 
                             delimited_text_items_in_list = 
@@ -48,13 +70,22 @@ let
                                                     let 
                                                         //Delimit text values with quotes
                                                         is_text = current is text,
+                                                        is_record = current is record,
+                                                        is_table = current is table,
+                                                        is_list = current is list,
                                                         add_quotes =
                                                             if is_text then 
                                                                 """" & current & """"
                                                             else if current is null then 
                                                                 "null"
+                                                            else if is_record then 
+                                                                fxRecordAsText(current)
+                                                            else if is_table then 
+                                                                fxTableAsText(current)
+                                                            else if is_list then 
+                                                                fxListAsText(current)
                                                             else
-                                                                Text.From(current),
+                                                                try Text.From(current) otherwise bad_value,
                                                         updated_element = state & {(if use_line_breaks then tab else "") & add_quotes}
                                                     in  
                                                         updated_element
