@@ -1,0 +1,6 @@
+// _DateType
+let
+    Source = type date
+in
+    Source
+

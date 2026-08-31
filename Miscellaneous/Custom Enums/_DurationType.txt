@@ -1,0 +1,5 @@
+// _DurationType
+let
+    Source = type duration 
+in
+    Source

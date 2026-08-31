@@ -1,0 +1,5 @@
+// _NullType
+let
+    Source = type null 
+in
+    Source

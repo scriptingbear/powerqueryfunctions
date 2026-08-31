@@ -1,0 +1,5 @@
+// _TextType
+let
+    Source = type text
+in
+    Source

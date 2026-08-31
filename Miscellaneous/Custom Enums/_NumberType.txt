@@ -1,0 +1,5 @@
+// _NumberType
+let
+    Source = type number
+in
+    Source

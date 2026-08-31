@@ -1,0 +1,5 @@
+// _RecordType
+let
+    Source = type record
+in
+    Source

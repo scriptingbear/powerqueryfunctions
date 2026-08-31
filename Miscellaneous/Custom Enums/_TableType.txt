@@ -1,0 +1,6 @@
+// _TableType
+let
+    Source = type table
+in
+    Source
+
