@@ -1,0 +1,55 @@
+/*  fxCreateQDict()
+
+    Takes a pair of identically sized lists: one with unique field names 
+    and one with corresponding values. It returns a read-only "Quicktionary" 
+    to simulate the functionality of a dictionary or hash table in other languages.
+
+    Parameters:
+                field_names - a distinct list of text values for the field names
+                field_values - a corresponding list of values; if longer than field_names,
+                               it will be automatically truncated to match size of field_names
+                default_value - optionally populate missing field values when field_values is shorter
+                                than field_names; default is null
+                
+
+
+
+*/
+
+(field_names as list, field_values as list, optional default_value as any) as record =>
+
+let
+    field_names_ok = (field_names <> {}) and
+                     (List.Select(field_names, each not Value.Is(_, type text)) = {}) and
+                     (List.Select(field_names, each Text.Trim(_) = "" ) = {}) and
+                     (List.IsDistinct(field_names)), 
+    field_values_ok = (field_values <> {}),
+
+    new_qdict = if field_names_ok and field_values_ok then 
+                    let 
+                        field_name_count = List.Count(field_names),
+                        field_value_count = List.Count(field_values),
+                        use_default = default_value ?? null,
+                        truncate_field_values = field_value_count > field_name_count,
+                        truncated_field_values = if truncate_field_values then 
+                                                    List.FirstN(field_values, field_name_count)
+                                                else 
+                                                    field_values,
+                        size_difference = field_name_count - List.Count(truncated_field_values),
+                        add_default = if size_difference > 0 then 
+                                            let 
+                                                new_field_values = List.Repeat({use_default}, size_difference),
+                                                padded_field_values = List.Combine({truncated_field_values, new_field_values})
+                                            in 
+                                                padded_field_values
+                                        else 
+                                            truncated_field_values,
+                        create_QDict = Record.FromList(add_default, field_names) 
+
+                    in 
+                       create_QDict
+                else 
+                    []
+
+in
+    new_qdict

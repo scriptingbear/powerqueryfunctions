@@ -1,0 +1,120 @@
+/*  Testing fxCreateQDict()
+
+
+    Case #1:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        default_value: missing
+        output: [Microsoft = "Office", Apple = "iPhone", NVidia = "GeForce RTX 5090", OpenAI = "ChaptGPT"]
+        reason:
+    
+    Case #2:
+        field_names: {}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        default_value: missing
+        output: []
+        reason: empty field_names list
+    
+    Case #3:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {}
+        default_value: missing
+        output: []
+        reason: empty field_values list
+
+    Case #4:
+        field_names: {"Microsoft", "    ", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        default_value: missing
+        output: []
+        reason: field_names contains a value that trimmed to a zero length string (ZLS)
+    
+    Case #5:
+        field_names: {"Microsoft", "Apple", "NVidia", null}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        default_value: missing
+        output: []
+        reason: field_names contains non-text value
+    
+    Case #6:
+        field_names: {{"Microsoft", "Apple"}, "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        default_value: missing
+        output: []
+        reason: field_names contains non-text value
+
+    Case #7:
+        field_names: {"Microsoft", "Apple", "NVidia", "Microsoft"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        default_value: missing
+        output: []
+        reason: field_names contains duplicates
+        
+    Case #8:
+        field_names: {"Microsoft", "Apple", "NVidia", "microSoft"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        default_value: missing
+        output: [Microsoft = "Office", Apple = "iPhone", NVidia = "GeForce RTX 5090", microSoft = "ChaptGPT"]
+        reason: case sensitivity applied to field names
+    
+    Case #9:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT", "Power Query", "M Code", "SQL Server"}
+        default_value: missing
+        output: [Microsoft = "Office", Apple = "iPhone", NVidia = "GeForce RTX 5090", OpenAI = "ChaptGPT"]
+        reason: automatic truncation of field_values because it's longer than field_names
+    
+    Case #10:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "ChaptGPT"}
+        default_value: missing
+        output: [Microsoft = "Office", Apple = "ChaptGPT", NVidia = null, OpenAI = null]
+        reason: missing field_values populated with default null
+        test: big_tech_Qdict[Apple] = "ChaptGPT"
+
+    Case #11:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {{1, 2, 3, true}, [Phone = "iPhone", Computer = "iMac"], Table.FromRows({{"GeForce RTX 4090", "RTX 5070 series"}}, {"Product1", "Product2"}), "ChatGPT"}
+        default_value: missing
+        output: [Microsoft = {1, 2, 3, true}, Apple = [Phone = "iPhone", Computer = "iMac"], NVidia = [Product1|Product2], OpenAI = "ChatGPT"]
+        reason: structured field values supported
+    
+    Case #12:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "ChaptGPT"}
+        default_value: "Hellur!"
+        output: [Microsoft = "Office", Apple = "ChaptGPT", NVidia = "Hellur!", OpenAI = "Hellur!"]
+        reason:
+    
+    Case #13:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "ChaptGPT"}
+        default_value: {1, 2, 3, "ABC", true, Number.PI}
+        output: [Microsoft = "Office", Apple = "ChaptGPT", NVidia = {1, 2, 3, "ABC", true, 3.1415926535897931}, OpenAI = {1, 2, 3, "ABC", true, 3.1415926535897931}]
+        reason: structured values can be used as defaults, too
+
+    Case #:
+        field_names:
+        field_values:
+        default_value:
+        output:
+        reason:
+
+    Case #:
+        field_names:
+        field_values:
+        default_value:
+        output:
+        reason:
+
+
+*/
+
+
+
+let
+    my_fields = {"Microsoft", "Apple", "NVidia", "OpenAI"},
+    my_values = {"Office", "ChaptGPT"},
+    big_tech_QDict = fxCreateQDict(my_fields, my_values, {1, 2, 3, "ABC", true, Number.PI})
+in
+    fxTextFromRecord(big_tech_QDict)
