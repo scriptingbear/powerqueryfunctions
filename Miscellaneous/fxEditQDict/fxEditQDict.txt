@@ -1,0 +1,63 @@
+/*  fxEditQDict()
+
+    A function that can add/edit/remove a single item in a "Quicktionary" (record). 
+
+    Parameters:
+                qdict - a "Quicktionary" object, i.e. a record
+                key - text corresonding to an existing or new key
+                operation - {_QDictAddItem | _QDictEditItem | _QDictRemoveItem}
+                value - any datatype; required for add and edit operations
+                       ignored for remove operation
+
+    [NEW CODE: 08/30/2026] Now overwriting existing key when added to "Quicktionary" instead of 
+                           failing silently, to align with behavior of real dictionaries in
+                           other languages. 
+
+
+
+*/
+
+(qdict as record, key as text, operation as number, optional value as any) as record =>
+
+let
+    qdict_ok = qdict <> [],
+    key_ok = (key <> "") and (Value.Is(key, type text)),
+    operation_ok = List.Contains({_QDictAddItem, _QDictEditItem, _QDictRemoveItem}, operation),
+    use_value = value ?? null,
+    fxValidateKey = (qdict_ as record, key_ as text) as logical =>
+            Record.HasFields(qdict_, key_),
+
+    fxAddItem = (qdict_ as record, key_ as text, value_ as any) as record =>
+            //Previously, fail silently if key already exists. Now, to more
+            //closely emulate behavior of a dictionary in VBA et. al.,
+            //overwrite existing keys without throwing an error.
+            //Can't use Record.Add(); must use Record.Combine
+            //No longer checking if key exists.
+            Record.Combine({qdict_, Record.AddField([], key_, value_)}),
+            
+    fxRemoveItem = (qdict_ as record, key_ as text) as record =>
+            //Fail silently if key doesn't exist
+            if Record.HasFields(qdict_, key_) then 
+                Record.RemoveFields(qdict_, key_)
+            else 
+                qdict_,
+
+    fxEditItem = (qdict_ as record, key_ as text, value_ as any) as record =>
+            //Fail silently if key doesn't exist
+            if Record.HasFields(qdict_, key_) then 
+                Record.TransformFields(qdict_, {key_, each {_, value_}{1}})
+            else 
+                qdict_,
+                
+    updated_qdict = if qdict_ok and key_ok and operation_ok then 
+                        if operation = _QDictAddItem then 
+                            fxAddItem(qdict, key, use_value)
+                        else if operation = _QDictEditItem then 
+                            fxEditItem(qdict, key, use_value)
+                        else 
+                            fxRemoveItem(qdict, key)
+                    else 
+                        qdict
+
+in
+    updated_qdict

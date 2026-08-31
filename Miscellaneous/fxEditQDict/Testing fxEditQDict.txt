@@ -1,0 +1,153 @@
+/*  Testing fxEditQDict()
+
+
+    Case #1:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key: "Tesla"
+        operation: _QDictAddItem
+        value: "Model Y"
+        output: [Microsoft = "Office", Apple = "iPhone", NVidia = "GeForce RTX 5090", OpenAI = "ChaptGPT", Tesla = "Model Y"]
+        reason:
+    
+    Case #2:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key: "Tesla"
+        operation: _QDictAddItem
+        value: missing
+        output: [Microsoft = "Office", Apple = "iPhone", NVidia = "GeForce RTX 5090", OpenAI = "ChaptGPT", Tesla = null]
+        reason: default null value paired with new key
+    
+    Case #3:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key: "I do not exist!"
+        operation: _QDictEditItem
+        value: "You shouldn't see me!"
+        output: [Microsoft = "Office", Apple = "iPhone", NVidia = "GeForce RTX 5090", OpenAI = "ChaptGPT"]
+        reason: invalid key causes silent failure: original "Quicktionary" returned
+
+    Case #4:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key: "Tesla"
+        operation: _QDictAddItem
+        value: {1, 2, 3, 4}
+        output: [Microsoft = "Office", Apple = "iPhone", NVidia = "GeForce RTX 5090", OpenAI = "ChaptGPT", Tesla = {1, 2, 3, 4}]
+        reason: structured values added to "Quicktionary"
+    
+    Case #5:
+        field_names: {}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key: "Tesla"
+        operation: _QDictAddItem
+        value: missing
+        output: []
+        reason: invalid (empty) "Quicktionary" causes silent failure
+    
+    Case #6:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {}
+        key: "Tesla"
+        operation: _QDictAddItem
+        value: missing
+        output: []
+        reason: invalid (empty) "Quicktionary" causes silent failure
+
+    Case #7:
+        field_names: {"Microsoft", "Apple", "NVidia", "Microsoft"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key: "Tesla"
+        operation: _QDictRemoveItem
+        value: missing
+        output: [Microsoft = "Office", Apple = "iPhone", NVidia = "GeForce RTX 5090", OpenAI = "ChaptGPT"]
+        reason: non existent key causes silent failure
+        
+    Case #8:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key: "Apple"
+        operation: _QDictRemoveItem
+        value: missing
+        output: [Microsoft = "Office", NVidia = "GeForce RTX 5090", OpenAI = "ChaptGPT"]
+        reason:
+    
+    Case #9:
+        field_names: {"Microsoft"}
+        field_values: {"Office"}
+        key: "Microsoft"
+        operation: _QDictRemoveItem
+        value: missing
+        output: []
+        reason:
+    
+    Case #10:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key: "Apple"
+        operation: _QDictEditItem
+        value: "Airtag"
+        output: [Microsoft = "Office", Apple = "Airtag", NVidia = "GeForce RTX 5090", OpenAI = "ChaptGPT"]
+        reason:
+
+    Case #11:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key: "NVidia"
+        operation: _QDictAddItem
+        value: "Giga GPU XL!!"
+        output: [Microsoft = "Office", Apple = "iPhone", NVidia = "Giga GPU XL!!", OpenAI = "ChaptGPT"]
+        reason: Existing key ("NVidia") overwritten
+    
+    Case #:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key:
+        operation:
+        value:
+        output: 
+        reason:
+    
+    Case #:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key:
+        operation:
+        value:
+        output: 
+        reason:
+
+    Case #:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key:
+        operation:
+        value:
+        output: 
+        reason:
+
+    Case #:
+        field_names: {"Microsoft", "Apple", "NVidia", "OpenAI"}
+        field_values: {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"}
+        key:
+        operation:
+        value:
+        output: 
+        reason:
+
+
+*/
+
+
+
+let
+    my_fields = {"Microsoft", "Apple", "NVidia", "OpenAI"},
+    my_values = {"Office", "iPhone", "GeForce RTX 5090", "ChaptGPT"},
+    qDict = fxCreateQDict(my_fields, my_values),
+    my_key = "Tesla",
+    my_value = {1, 2, 3, 4},
+    my_operation = _QDictAddItem,
+    updated_qdict = fxEditQDict(qDict, my_key, my_operation, my_value)
+in
+    fxTextFromRecord(updated_qdict)
