@@ -1,0 +1,32 @@
+// fxExtractContainerTypeFromQuantityPerUnit()
+// © 2023 Adiv Abramson
+/*
+    Split off the container type (pkg, jar, bottle, etc.) from 
+    ProductTable[Quantity Per Unit] into its own column. However, a few entries 
+    that end in a simple unit of measurement like "g" and "ml" will end up in the 
+    new last column. Instead, for values ending in " g" or " ml" (and possibly others), don't split.
+
+*/
+
+(Source as text, optional ignored_ending_chars as list) as nullable text =>
+let
+    container_type_column = if Text.Trim(Source) = "" then null 
+                            else 
+                                let 
+                                    convert_text_to_list = Text.Split(Source, " "),
+                                    items_in_list = List.Count(convert_text_to_list),
+                                    // Test last element of list to see if it's in the list of
+                                    // ending characters we DON'T want in their own column.
+                                    // Instead, they need to stay joined to their corresponding
+                                    // quantity, e.g. don't split "g" from "500 g".
+                                    has_ignored_ending_chars = if ignored_ending_chars <> null then
+                                                                if List.ContainsAny({List.Last(convert_text_to_list)}, ignored_ending_chars) then true else false 
+                                                                else 
+                                                                    false,
+                                    container_type =  if has_ignored_ending_chars then null 
+                                                      else 
+                                                         List.Last(convert_text_to_list)
+                                    in 
+                                        container_type
+in
+    container_type_column
