@@ -1,0 +1,47 @@
+/*  fxIsBetween()
+
+    Returns true is value is between low value and high value, inclusive
+
+    Parameters:
+                value - non-null primitive
+                min - non-null primitive less than or equal to max
+                max - non-null primitive greater than or equal to min
+    
+    Dependencies:
+                Enums: _TextType, _NumberType, _DateType, _DateTimeType, _DurationType
+
+*/
+
+(value as any, min as any, max as any) as logical =>
+
+let
+    //Validations
+    //All inputs must not be null, and all must be of the same primitive type
+    datatypes = {_TextType, _NumberType, _DateType, _DateTimeType, _DurationType},
+    fxIsValidDataType = (value_) as logical =>
+        List.AnyTrue(List.Transform(datatypes, each Value.Is(value_, _))),
+    datatypes_ok = List.AllTrue(
+                                List.Transform(
+                                                {value, min, max}, 
+                                                each fxIsValidDataType(_)
+                                            )
+                                & 
+                                
+                                {
+                                    List.Count(
+                                                List.Distinct({Value.Type(value), Value.Type(min), Value.Type(max)})
+                                            ) = 1
+                                }
+
+                            ),
+    inputs_ok = if datatypes_ok then 
+                    max >= min 
+                else 
+                    false,
+    result = if inputs_ok then 
+                (value >= min) and (value <= max)
+             else 
+                false  
+
+in
+    result

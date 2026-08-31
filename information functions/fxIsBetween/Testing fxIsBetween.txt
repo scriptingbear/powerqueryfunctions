@@ -1,0 +1,224 @@
+/*  Testing fxIsBetween()
+
+
+Case #1:
+    value: null
+    min: null
+    max: null
+    output: false
+    reason: one or more inputs are invalid (wrong datatype)
+
+Case #2:
+    value: {123, "ABC"}
+    min: 1
+    max: 2
+    output: false
+    reason: one or more inputs are invalid (wrong datatype)
+
+Case #3:
+    value: 1
+    min: 3
+    max: 0
+    output: false
+    reason: max < min
+
+Case #4:
+    value: 1
+    min: 3
+    max: 3
+    output: false
+    reason: value not between min and max
+
+Case #5:
+    value: 1
+    min: 0
+    max: 1
+    output: true
+    reason: min <= value <= max
+
+Case #6:
+    value: 10
+    min: 4.5
+    max: 12
+    output: true
+    reason: min <= value <= max
+
+Case #7:
+    value: "Z"
+    min: 3.5
+    max: 15
+    output: false 
+    reason: inputs are of differing datatypes
+
+Case #8:
+    value: "h"
+    min: "a"
+    max: "z"
+    output: true
+    reason: min <= value <= max
+
+Case #9:
+    value: "R"
+    min: "p"
+    max: "s"
+    output: false
+    reason: value not between min and max
+
+Case #10:
+    value: "R"
+    min: "s"
+    max: "p"
+    output: false
+    reason: max < min
+
+Case #11:
+    value: 200
+    min: 500
+    max: 700
+    output: false
+    reason: value not between min and max
+
+Case #12:
+    value: "Power Query"
+    min: "C#"
+    max: "VBA"
+    output: true
+    reason: min <= value <= max
+
+Case #13:
+    value: "D"
+    min: "C"
+    max: "C"
+    output: false
+    reason: value not between min and max
+
+Case #14:
+    value: Number.PI
+    min: 1
+    max: 4
+    output: true
+    reason: min <= value <= max
+
+Case #15:
+    value: -5
+    min: -10
+    max: -3
+    output: true
+    reason: min <= value <= max
+
+Case #16:
+    value: DateTime.LocalNow()
+    min: #datetime(2024, 8, 31, 0, 0, 0)
+    max: #datetime(2026, 9, 15, 13, 42, 55)
+    output: true
+    reason: min <= value <= max
+
+Case #17:
+    value: #datetime(2024, 8, 30, 12, 10, 50)
+    min: #datetime(2024, 8, 30, 10, 3, 21)
+    max: #datetime(2024, 8, 30, 6, 0, 0)
+    output: false
+    reason: max < min
+
+Case #18:
+    value: #date(1999, 12, 31)
+    min: #date(1977, 4, 26)
+    max: #date(2002, 5, 29)
+    output: true
+    reason: min <= value <= max
+
+Case #19:
+    value: 850
+    min: 155.2
+    max: 765.89
+    output: false
+    reason: value not between min and max
+
+Case #20:
+    value: 850
+    min: 155.2
+    max: 850.0
+    output: true
+    reason: min <= value <= max
+
+Case #21:
+    value: "G"
+    min: "G"
+    max: "G"
+    output: true
+    reason: min <= value <= max
+
+Case #22:
+    value: 0
+    min: 0 
+    max: 0
+    output: true
+    reason: min <= value <= max
+
+Case #23:
+    value: -22.5
+    min: -22.5
+    max: -22.5
+    output: true
+    reason: min <= value <= max
+
+Case #24:
+    value: #datetime(2024, 8, 30, 10, 3, 21)
+    min: #datetime(2024, 8, 30, 10, 3, 21)
+    max: #datetime(2024, 8, 30, 10, 3, 21)
+    output: true
+    reason: min <= value <= max
+
+Case #25:
+    value: #duration(2, 15, 10, 3)
+    min: #duration(1, 8, 22, 16)
+    max: #duration(5, 0, 6, 35)
+    output: true
+    reason: min <= value <= max
+
+Case #26:
+    value: "Azimuth"
+    min: "azimuth"
+    max: "azimuth"
+    output: false
+    reason: value not between min and max
+
+Case #27:
+    value: Number.Power(5, 15)
+    min: Number.Power(5, 10)
+    max: Number.Power(5, 25)
+    output: true
+    reason: min <= value <= max
+
+Case #28:
+    value: Number.Power(5, -15)
+    min: Number.Power(5, -20)
+    max: Number.Power(5, -5)
+    output: true
+    reason: min <= value <= max
+
+Case #:
+    value: 
+    min: 
+    max: 
+    output:
+    reason:
+
+Case #:
+    value: 
+    min: 
+    max: 
+    output:
+    reason:
+
+
+*/
+
+
+let
+    my_value = Number.Power(5, -15),
+    my_min = Number.Power(5, -20),
+    my_max = Number.Power(5, -5),
+    result = fxIsBetween(my_value, my_min, my_max)
+in
+    result
