@@ -1,0 +1,124 @@
+/* fxListSlice()
+
+    A function that mimics Python's list slicing syntax, including negative indexing, with
+    a key difference that this function returns lists elements up to and including the end_index,
+    unlike Python, which always excludes the last element. It does not fully replicate Python's 
+    list slicing semantics. For example, the start, end, and increment parameters must always be
+    of the same sign.
+    
+
+    Parameters:
+                REQUIRED:
+                    input_list: a non empty list
+                    start_index: an integer value, positive or negative, within the bounds of input_list
+
+                OPTIONAL:
+                    end_index: if missing, it will be set to start_index. This mimics Python's syntax
+                               for returning a single element; especially useful with negative indexing,
+                               e.g  fxListSlice(my_list, -2) <=> my_list[-2] <=> fxListSlice(my_list, -2, -2)
+                    increment a non-zero number less than the size of input_list;
+                              default is 1; if negative, output will be in reversed order
+    Returns: a new list of elements from the input_list corresponding to the slicing indexes, or an
+             empty list, {}, if any inputs are invalid, e.g. including a starting index greater than an ending index
+             for positive indexes, or starting index less than ending index for negative indexes
+                    
+
+
+*/
+
+
+(input_list as list, start_index as number, optional end_index as number, optional increment as number) as list =>
+
+let
+    //input_list parameter validations
+    input_list_ok = input_list <> {},
+    input_list_size = List.Count(input_list),
+
+    //start_index and end_index parameter validaions
+    
+
+    //In case float is passed to function, Value.Is(<n>, Int64.Type) returns true for some reason??
+    //So "coerce" the slicer values to integers
+    start_index = Int64.From(start_index),
+
+    //increment parameter validations
+    increment = increment ?? 1,
+    //Increment automatically made negative in fxSlice() if start_index < 0
+    increment_ok = List.AllTrue({
+                                (increment <> 0),
+                                (Number.Abs(increment) <= input_list_size),
+                                (((start_index >= 0) and (increment > 0)) or ((start_index < 0) and (increment <> 0)))
+                                }
+                              ),
+
+    //Originally, I wrote:
+    //Can't assign a different expression to a value label (step name) in same scope
+    //so use a temporary value label to account for a missing end_index
+
+    //  temp_end_index = end_index ?? start_index,
+    //  end_index = //Int64.From(temp_end_index) <-- PQ throws cyclical reference error here
+
+    //Since PQ throws a cyclical reference error, express the logic
+    //without using the ?? operator and the temp_end_index value label,
+    //which is actually simpler to read and understand :-O
+    end_index = if end_index = null then start_index else end_index,
+
+    //Make code easier to read and maintain by offloading logic into
+    //dedicated functions
+    fxValidatePositiveIndexes = () as logical =>
+        //Positive indexes are 0 based, so they must be less than the length of input_list
+        (end_index >= start_index) and 
+        (List.AllTrue(List.Transform({start_index, end_index}, each Number.Abs(_) < input_list_size))),
+
+    fxValidateNegativeIndexes = () as logical =>
+        //Negative indexes are 1 based, so they can be equal to input_list length
+        (end_index <= start_index) and 
+        (List.AllTrue(List.Transform({start_index, end_index}, each Number.Abs(_) <= input_list_size))),
+
+    indexes_ok = if start_index >= 0 then fxValidatePositiveIndexes() else fxValidateNegativeIndexes(), 
+
+    fxSlice = () as list =>
+                       //Indexes already validated
+                        let 
+                           //Negative indexes are not supported by PQ, so any negative slicer value
+                           //must be converted to a positive value. It's OK if start_index > end_index,
+                           //such as when both are negative. In that case the indexes list, defined below, will start
+                           //with a positive version of start_index and each subsequent value in 
+                           //that list will decrease by a negative amount, since for negative slicers the 
+                           //increment parameter is automatically made negative
+
+                           //For a list with for elements, say {"A", 1, 2, true}, a start_index of -1 becomes a positive
+                           //index of 3, corresponding to element value true, which is the first element counting from the 
+                           //end of the list, equivalent to ["A", 1, 2, true][-1] in Python
+                           start_pos = if start_index < 0 then input_list_size - Number.Abs(start_index) else start_index,
+
+                           //Same logic applies for a negative end_index
+                           end_pos  = if end_index < 0 then input_list_size - Number.Abs(end_index) else end_index,
+
+                           //For negative indexes, the increment must be negative for List.Numbers() to work
+                           increment_value = if start_index < 0 then -1 * Number.Abs(increment) else increment,
+
+                           //This section determines the value for the count parameter in the List.Numbers() function.
+                           //Whenever the increment is not 1, must ensure List.Numbers() doesn't generate an index outside
+                           //the bounds of input list. 
+
+                           //So for positive indexes, the count is the integer division of input_list_size/increment.
+                           //And for negative indexes, the count is also the integer division of input_list_size/increment,
+                           //adding the 1 because negative indexes can be equal to the length of the list.
+                           slice_size = Number.IntegerDivide((end_pos - start_pos), increment_value) + 1,
+                                       
+                           //Ensure that the number of indexes generated are within the bounds of the input_list             
+                           indexes =  List.FirstN(List.Numbers(start_pos, slice_size, increment_value), input_list_size),
+                           sliced_list = List.Transform(indexes, each input_list{_})
+                           
+                        in 
+                            sliced_list,
+
+    sliced_list = if input_list_ok and increment_ok and indexes_ok then 
+                         fxSlice()
+                  else 
+                    {}
+
+    
+in
+    sliced_list
