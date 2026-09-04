@@ -1,0 +1,158 @@
+/* Test _record()
+
+Case #1: 
+    fields: {}
+    values: {}
+    selector: missing
+    output: []
+    reason: invalid fields list
+
+Case #2: 
+    fields: {"A", "B"}
+    values: {1}
+    selector: missing
+    output: []
+    reason: fields and values list not of same size
+
+Case #3: 
+    fields: {"A", [A = 1, B = 2]}
+    values: {1, true}
+    selector: missing
+    output: []
+    reason: fields list contains non text value(s)
+
+Case #4: 
+    fields: {"A", "B", "C"}
+    values: {"Power Query", {1,2,3}, [VBA = "Cool", Fortran = "Big Metal", Power Query = "Amazing"]}
+    selector: missing
+    output: [A = "Power Query", B = {1, 2, 3}, C = [VBA = "Cool", Fortran = "Big Metal", Power Query = "Amazing"]]
+    reason: 
+
+Case #5: 
+    fields: {"Power Query", "VBA",        "C#",              "Haskell",    "Python"}
+    values: {"Functional",  "Procedural", "Object Oriented", "Functional", "Procedural"}
+    selector: Text.StartsWith(field_, "P") and (List.Contains({"Functional", "Procedural"}, value_))
+    output: [Power Query = "Functional", Python = "Procedural"]
+    reason:
+
+Case #6: 
+    fields: {"John Jones", "Sally Smith", "Hank Jones", "David Harrison", "Blake McSweeney", "Billy Davis"}
+    values: {100000, 22000, 84560, 101125, 95270, 67500}
+    selector: value_ > 85000
+    output: [John Jones = 100000, David Harrison = 101125, Blake McSweeney = 95270] 
+    reason:
+
+Case #7: 
+    fields: {"John Jones", "Sally Smith", "Hank Jones", "David Harrison", "Blake McSweeney", "Billy Davis"}
+    values: {[Salary = 100000, Bonus = 2000], [Salary = 22000], [Salary = 84560, Bonus =1750], [Salary = 101125], [Salary = 95270, Bonus = 800],  
+             [Salary = 67500, Bonus = 675]}
+    selector: Record.HasFields(value_, "Bonus")
+    output: [John Jones = [Salary = 100000, Bonus = 2000], Hank Jones = [Salary = 84560, Bonus = 1750], 
+            Blake McSweeney = [Salary = 95270, Bonus = 800], Billy Davis = [Salary = 67500, Bonus = 675]]
+    reason:
+
+Case #8: 
+    fields: {"John Jones", "Sally Smith", "Hank Jones", "David Harrison", "Blake McSweeney", "Billy Davis"}
+    values: {[Salary = 100000, Bonus = 2000], [Salary = 22000], [Salary = 84560, Bonus =1750], [Salary = 101125], [Salary = 95270, Bonus = 800],  
+             [Salary = 67500, Bonus = 675]}
+    selector: Record.FieldOrDefault(value_, "Bonus", 0) > 1500
+    output: [John Jones = [Salary = 100000, Bonus = 2000], Hank Jones = [Salary = 84560, Bonus = 1750]]
+    reason:
+
+Case #9: 
+    fields: {"A", "B", "C", "B"}
+    values: {1, 2, 3, 4}
+    selector: missing
+    output: []
+    reason: duplicate entries in fields
+
+Case #10: 
+    fields: {"A", "", "C", "B"}
+    values: {1, 2, 3, 4}
+    selector: missing
+    output: []
+    reason: one or more field values is a zero length string (ZLS)
+
+Case #11: 
+    fields: {"A", "B", "C", null}
+    values: {1, 2, 3, 4}
+    selector: missing
+    output: []
+    reason: one or more field values is null
+
+Case #12: 
+    fields: {"John Jones", "Sally Smith", "Hank Jones", "David Harrison", "Blake McSweeney", "Billy Davis"}
+    values: {100000, 22000, 84560, 101125, 95270, 67500}
+    selector:  "Hellur!"
+    output: []
+    reason: selector doesn't return logical datatype, so _record() treats it as returning false
+
+Case #13: 
+    fields: {"John Jones   ", "       Sally Smith", "Hank Jones", "David Harrison         ", "Blake McSweeney", "Billy Davis           "}
+    values: {100000, 22000, 84560, 101125, 95270, 67500}
+    selector: List.Contains({"J", "B"}, Text.Start(field_, 1))
+    output: [John Jones = 100000, Blake McSweeney = 95270, Billy Davis = 67500]
+    reason: fields were automatically trimmed of excess leading and trailing spaces
+
+Case #14: 
+    fields: {"John Jones", "Sally Smith", "Hank Jones", "David Harrison", "Blake McSweeney", "Billy Davis"}
+    values: {100000, 22000, 84560, 101125, 95270, 67500}
+    selector: value_ > 450000
+    output: []
+    reason: No data matches criteria
+
+Case #15: 
+    fields: {"A  ", "B", "  A", "B"}
+    values: {1, 2, 3, 4}
+    selector: missing
+    output: []
+    reason: fields list contains duplicates after trimming
+
+Case #16: 
+    fields: {"John Jones", "Sally Smith", "Hank Jones", "David Harrison", "Blake McSweeney", "Billy Davis"}
+    values: {100000, 22000, 84560, 101125, 95270, 67500}
+    selector: Record.FieldOrDefault(value_, "Bonus", 0) > 1500
+    output: []
+    reason: selector is invalid for this data since it expects records in the values field
+
+Case #17: 
+    fields: {"A", "", "C", "B"}
+    values: {1, 2, 3, 4}
+    selector: missing
+    output: [A = 1,  = 2, C = 3, B = 4]
+    reason: invalid results: should not have allowed a ZLS in fields list
+
+Case #18: 
+    fields: {"A", "         ", "C", "B"}
+    values: {1, 2, 3, 4}
+    selector: missing
+    output: []
+    reason: CORRECTED LOGIC: now checking if trimmed values in fields list are equal to a ZLS and rejecting if any are found
+
+Case #19: 
+    fields: List.Transform(List.Numbers(1, 1000), each Text.From(_))
+    values: List.Numbers(1, 1000)
+    selector: value_ >= 500 and value_ <= 512
+    output: [500 = 500, 501 = 501, 502 = 502, 503 = 503, 504 = 504, 505 = 505, 506 = 506, 507 = 507, 508 = 508, 509 = 509, 510 = 510, 511 = 511, 512 = 512]
+    reason: stress test with large dataset
+
+Case #: 
+    fields:
+    values:
+    selector: missing
+    output:
+    reason:
+
+*/
+
+
+
+
+let
+   my_func = (field_ as text, value_ as any) as logical =>
+                 value_ >= 500 and value_ <= 512,
+    my_fields = List.Transform(List.Numbers(1, 1000), each Text.From(_)),
+    my_values = List.Numbers(1, 1000),
+    my_record = _record(my_fields, my_values, my_func)
+in
+    fxTextFromRecord(my_record)

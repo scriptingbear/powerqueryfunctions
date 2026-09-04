@@ -1,0 +1,78 @@
+/*  _record() 
+
+    A fake record constructor imitating the #table() constructor. Using an underscore
+    as the leading character because a pound sign makes calling the function messy, e.g.
+    #"#record", as the # is a special symbol in Power Query and it will automatically enclose
+    a label containing a special character in pound signs.
+
+    The "secret sauce" of this function is its ability to filter the source lists before creating the record.
+    So if you have, for example, a list of employee names or IDs and another list of their salaries
+    or some other attribute, you can pass a selector function to filter the items before a record
+    is created, saving you the task of having to do that afterwards.
+
+    Sample selector function:
+        my_func = (field_ as text, value_ as any) as logical =>
+            Text.StartsWith(field_, "P") and (List.Contains({"Functional", "Procedural"}, value_))
+
+
+    Parameters:
+                fields - a list of distinct, non empty text values for the field names of the resulting record
+                values - a list of values of any type for the values of the resulting record
+
+                OPTIONAL:
+                            selector - a function of return datatype logical which accepts
+                            a field name and value pair, and applies a logical test
+                            against one or both of them
+
+    Returns: record
+
+
+    Dependencies: _TextType "prenum"
+
+
+*/
+
+(fields as list, values as list, optional selector as function) as any =>
+
+let
+    //Validations
+    fxValidateFields = (field_list as list) as logical =>
+            let 
+                is_empty_list = field_list = {},
+                is_all_text_values = List.Select(field_list, each not Value.Is(_, _TextType)) = {},
+                //Will have to trim fields list again, but here we do so to test for distinctness and catch duplicates
+                //hiding in entries like "Field 1   ", "   Field 1", which both yield the same value when trimmed
+                is_distinct = if is_all_text_values then List.IsDistinct(List.Transform(field_list, each Text.Trim(_))) else false,
+                has_no_empty_text = if is_all_text_values then List.Select(field_list, each Text.Trim(_) = "") = {} else false,
+                is_valid = (not is_empty_list) and is_all_text_values and is_distinct and has_no_empty_text 
+            in 
+                is_valid,
+
+    values_ok = values <> {},
+    list_size = List.Count(fields),
+    //fields and values lists must be identically sized; excess items in either
+    //are not automatically ignored
+    size_ok = List.Select({fields, values}, each List.Count(_) <> list_size) = {},
+
+    new_record = if fxValidateFields(fields) and values_ok and size_ok then 
+                    let 
+                        trimmed_fields = List.Transform(fields, each Text.Trim(_)),
+                        filtered_data = if selector <> null then 
+                                            let 
+                                                zipped = List.Zip({trimmed_fields, values}),
+                                                applied_filter = List.Select(zipped, each try selector(_{0}, _{1}) otherwise false),
+                                                filtered_fields = List.Transform(applied_filter, each _{0}),
+                                                filtered_values = List.Transform(applied_filter, each _{1}),
+                                                result = {filtered_fields, filtered_values} 
+                                            in 
+                                                result
+                                        else 
+
+                                            {trimmed_fields, values},   
+                        output = Record.FromList(filtered_data{1}, filtered_data{0})
+                    in 
+                        output 
+                else 
+                    []
+in
+    new_record
