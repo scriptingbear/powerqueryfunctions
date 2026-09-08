@@ -1,0 +1,111 @@
+/*  Testing fxEquivalent()
+
+
+Case #1:
+        input_lists: {}
+        output: false
+        reason: SANITY CHECK: input_lists is an empty list
+
+Case #2:
+        input_lists: {{}}
+        output: false
+        reason: SANITY CHECK: input_lists contains less than 2 items
+
+Case #3:
+        input_lists: {{}, {}}
+        output: true
+        reason: empty lists are equivalent
+
+Case #4:
+        input_lists: {{1, 2, 3}, {1, 2, 3}, {1, 2, 3}}
+        output: true
+        reason: identical lists are equivalent; more than two lists at a time may be compared
+
+Case #5:
+        input_lists: {{2, 1, 3}, {3, 2, 1}, {1, 3, 2}}
+        output: true
+        reason: lists containing the same set of primitives, regardless of internal order, are equivalent
+
+Case #6:
+        input_lists: {{2, 1, 3}, null, "I'm not a list!", {1, 3, 2}}
+        output: false
+        reason: SANITY CHECK: input_lists contains non-list items
+
+Case #7:
+        input_lists: {{[A = 1, B = 2, C = true]}, {[C = true, A = 1, B = 2]}}
+        output: true
+        reason: single items lists containing structured values can be compared; 
+                records with the same fields, regardless of order, are equivalent
+                this is a way to compare single items: enclose each in {}
+
+Case #8:
+        input_lists: {{Addresses_1}, {Addresses_2}}
+        output: true
+        reason: comparing identical tables
+
+Case #9:
+        input_lists: {{1, 3, 2, {5, 6, 7, 8}, [A = 1, B = 2]}, {{5, 6, 7, 8}, 1, 2, 3, [B = 2, A = 1]}}
+        output: true
+        reason: comparing lists containing a variety of datatypes, including structured values
+
+Case #10:
+        input_lists: {{{8, 6, 5, 7}, 1, 3, 2, [A = 1, B = 2]}, {{5, 6, 7, 8}, 1, 2, 3, [B = 2, A = 1]}}
+        output: true
+        reason: List.ContainsAll(list_1, list_2) returns false, because the elements of the embedded lists 
+                are not in the same internal order
+
+Case #11:
+        input_lists: {{2, 1, 3}, {null}, {"I'm not a list!"}, {1, 3, 2}}
+        output: false
+        reason: SANITY CHECK: lists containing different elements are not equivalent
+
+Case #12:
+        input_lists: {List.Numbers(0, 10, 1), List.Reverse(List.Numbers(0, 10, 1))}
+        output: true
+        reason: a list and its reverse are equivalent
+
+Case #13:
+        input_lists: {{[A = 1, B = 2, C = true], true, Number.PI, Addresses_1}, {Addresses_2, [C = true, A = 1, B = 2], Number.PI, true}}
+        output: true
+        reason: even lists containing structured values in different orders can be compared
+
+Case #14:
+        input_lists: {{1, 2, 3}, {1, 2, 3}, {1, 2, 3, 4}}
+        output: false
+        reason: SANITY CHECK: all lists in input_lists must be the same size
+
+Case #15:
+        input_lists: {{{1, 2, 3, 4, 5}}, {{5, 1, 3, 2, 4}}}
+        output: true
+        reason:
+
+Case #:
+        input_lists:
+        output:
+        reason:
+
+Case #:
+        input_lists:
+        output:
+        reason:
+
+Case #:
+        input_lists:
+        output:
+        reason:
+
+Case #:
+        input_lists:
+        output:
+        reason:
+
+
+
+
+*/
+
+
+let
+    my_input_lists = {{{1, 2, 3, 4, 5}}, {{5, 1, 3, 2, 4}}}
+in
+    fxEquivalent(my_input_lists)

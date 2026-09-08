@@ -1,0 +1,66 @@
+/*  fxEquivalent()
+
+    A function that compares two or more lists containing any kind of values. 
+    The lists are considered "equivalent" if they have the same elements,
+    regardless of order. This can be useful since in PQ, {"A", 2, true} is NOT
+    "equal" to {true, "A", 2}, even though they have the same elements, but they are
+    "equivalent."
+
+
+    Note that  
+               //Order of fields in records has no effect
+               List.ContainsAll({1, 3, 2, {5, 6, 7, 8}, [A = 1, B = 2]}, {{5, 6, 7, 8}, 1, 2, 3, [B = 2, A = 1]}) --> TRUE
+               //Order of elements in lists does have an effect, when there are other elements in the lists being compared
+               List.ContainsAll({1, 3, 2, {5, 6, 7, 8}, [A = 1, B = 2]}, {{8, 5, 6, 7}, 1, 2, 3, [B = 2, A = 1]}) --> FALSE
+               //Order of elements has no effect if only single lists are being compared               
+	       List.ContainsAll({1, 2, 3, 4, 5}, {5, 1, 3, 2, 4}) --> TRUE
+               //Just enclosing single lists with braces makes the order of elements matter
+               List.ContainsAll({{1, 2, 3, 4, 5}}, {{5, 1, 3, 2, 4}}) -- FALSE
+               
+	        Addresses_1 = Addresses_2 --> TRUE //both tables were created from the same data source, independently
+                                                  //even if columns are rearranged, the result is still TRUE
+                [A = 1, B = 2, C = true] = [A = 1, B = 2, C = true] --> TRUE //order of fields in records doesn't matter
+                [A = 1, B = 2, C = true] = [C = true, A = 1, B = 2] --> TRUE
+
+               It seems that List.ContainsAll() doesn't care about the order of elements in the lists, but the = 
+               operator does!
+
+    Parameters: 
+                input_list: a list of two or more lists to compare
+
+
+               
+ 
+
+
+*/
+
+(input_lists as list) as logical =>
+
+let
+    //Validations
+    input_lists_ok = (List.Count(input_lists) > 1) and 
+                     (List.AllTrue(List.Transform(input_lists, each _ is list))) and 
+                     (List.Count(List.Distinct(List.Transform(input_lists, each List.Count(_)))) = 1),
+    fxSortEmbeddedLists = (list_ as list) as list =>
+        //Sorts embedded lists and records, to 1 level
+        //To make comparisons easier
+        //{"A", {3, 1, 4, 2}, true, [D = 1, F = 2]} -->
+        //{"A", {1, 2, 3, 4}, true, [D = 1, F = 2]}
+        if list_ <> {} then 
+            List.Transform(list_, each if _ is list then List.Sort(_) else _)
+        else 
+            list_,
+    sorted_embedded_lists = List.Transform(input_lists, each fxSortEmbeddedLists(_)),
+    test_equivalence = if input_lists_ok then
+                            List.Accumulate(
+                                            {1..List.Count(sorted_embedded_lists)-1},
+                                            true,
+                                            (state, current) =>
+                                                state and List.ContainsAll(sorted_embedded_lists{0}, sorted_embedded_lists{current})
+                                        )
+                        else 
+                            false
+
+in
+    test_equivalence
