@@ -1,0 +1,99 @@
+/*  Testing fxListSelectByIndex()
+
+
+Case #1:
+        input_list: {}
+        indexes: {}
+        output: {}
+        reason: invalid (empty) input_list; invalid (empty) indexes
+
+
+Case #2:
+        input_list: {1}
+        indexes: {}
+        output: {}
+        reason: invalid (empty) indexes
+
+Case #3:
+        input_list: {1, 2, 3, 4}
+        indexes: {"A", true, {false, Number.PI}}
+        output: {4}
+        reason: Number.PI -> 3; input_list{3} = 4
+
+Case #4:
+        input_list: List.Numbers(25, 20, 5)
+        indexes: {2, 4, 0, 9, -22, 29}
+        output: {35, 45, 25, 70}
+        reason: only valid indexes considered
+
+Case #5:
+        input_list: List.Numbers(25, 20, 5)
+        indexes: {-2, 98, 345, 56, 90, true, [A = 1, B = 2]}
+        output: {}
+        reason: indexes list contains no valid indexes
+
+Case #6:
+        input_list: List.Dates(#date(2026, 9, 8), 10, #duration(1, 0, 0, 0))
+        indexes: {3, 1, 4, 0, 2, 2, 7, 9, 0}
+        output: {9/11/2026, 9/9/2026, 9/12/2026, 9/8/2026, 9/10/2026, 9/10/2026, 9/15/2026, 9/17/2026, 9/8/2026}
+        reason:
+
+Case #7:
+        input_list: List.Dates(#date(2026, 9, 8), 10, #duration(1, 0, 0, 0))
+        indexes: {#table({"City", "State"}, {{"Appleton", "WI"}, {"Vancouver", "WA"}}), 3, 1, {"A", "B", "C"},  4, 0, 2, 2, [A = 1, B = true], 7, 9, 0}
+        output: {9/11/2026, 9/9/2026, 9/12/2026, 9/8/2026, 9/10/2026, 9/10/2026, 9/15/2026, 9/17/2026, 9/8/2026}
+        reason: same results as Case #6; all invalid index values ignored
+
+Case #8:
+        input_list: List.Dates(#date(2026, 9, 8), 10, #duration(1, 0, 0, 0))
+        indexes: {#table({"City", "State"}, {{"Appleton", "WI"}, {"Vancouver", "WA"}}),  3, 1, {"A", "B", "C"},  4, 0, 2, 2, [A = 1, B = true], 7, 9, 0, {true, false, "maybe", {false, 1 = 1, "VBA", {{{8, {6, 5, 4}}}}}
+        output: {9/11/2026, 9/9/2026, 9/12/2026, 9/8/2026, 9/10/2026, 9/10/2026, 9/15/2026, 9/17/2026, 9/8/2026, 9/16/2026, 9/14/2026, 9/13/2026, 9/12/2026}
+        reason: vslif indexes extracted from deeply nested list
+
+Case #9:
+        input_list: List.Dates(#date(2026, 9, 8), 1000, #duration(1, 0, 0, 0))
+        indexes: List.Reverse(List.Numbers(0, 10, 50))
+        output: {12/2/2027, 10/13/2027, 8/24/2027, 7/5/2027, 5/16/2027, 3/27/2027, 2/5/2027, 12/17/2026, 10/28/2026, 9/8/2026}
+        reason: indexes list is in reverse order; large input_list
+
+Case #10:
+        input_list: List.Dates(#date(2026, 9, 8), 100, #duration(1, 0, 0, 0))
+        indexes: {99, {}, 50, 22, 0, 10, {}, {}, null, {}, 10, 10, 10}
+        output: {12/16/2026, 10/28/2026, 9/30/2026, 9/8/2026, 9/18/2026, 9/18/2026, 9/18/2026, 9/18/2026}
+        reason: embedded empty lists and nulls are ignored
+
+Case #:
+        input_list:
+        indexes:
+        output:
+        reason:
+
+Case #:
+        input_list:
+        indexes:
+        output:
+        reason:
+
+Case #:
+        input_list:
+        indexes:
+        output:
+        reason:
+
+Case #:
+        input_list:
+        indexes:
+        output:
+        reason:
+
+
+*/
+
+
+
+let
+    my_input_list = List.Dates(#date(2026, 9, 8), 100, #duration(1, 0, 0, 0)),
+    my_indexes = {99, {}, 50, 22, 0, 10, {}, {}, null, {}, 10, 10, 10},
+    result = fxListSelectByIndex(my_input_list, my_indexes)
+in
+    fxTextFromList(result)

@@ -1,0 +1,51 @@
+/*  fxListSelectByIndex()
+
+    An alternative function for selecting list segments, similar to fxListSlice(), but
+    while that function works with contiguous blocks of list elements, e.g. 
+    fxListSlice(list, start_index, [end_index, increment]), it doesn't allow you
+    to pick arbitrary elements, e.g. something like my_list{15, 0, 2, 8, 0, 3, 20..30}. 
+
+    This function attempts to provide that functionality, allowing the user to select
+    any number of valid indexes from a list, in any order, including repeated indexes.
+
+    Parameters: 
+                input_list - a non-empty list
+                indexes - a non-empty list of lists of positive integer indexes
+
+    Returns: a list
+
+
+
+*/
+
+(input_list as list, indexes as list) as list =>
+
+
+let
+    //Validations
+    input_list_ok = input_list <> {},
+    indexes_ok = indexes <> {},
+    fxFlattenList = (list_ as list) as list =>
+        List.Accumulate(list_,
+                        {},
+                        (state, current) =>
+                            if Value.Is(current, Int64.Type)  then 
+                                List.Combine({state, {Int64.From(current)}}) 
+                            else if Value.Is(current, type list) then 
+                                   List.Combine({state, @fxFlattenList(current)})
+                                 else 
+                                    state
+                        ),
+    result = if input_list_ok and indexes_ok then 
+                            let 
+                                max_index = List.Count(input_list) - 1,
+                                flattened_indexes = fxFlattenList(indexes),
+                                valid_indexes = List.Select(flattened_indexes, each (_ >= 0) and (_ <= max_index)),
+                                selected_input_list_items = List.Transform(valid_indexes, each input_list{_})
+                            in 
+                                selected_input_list_items                                               
+            else 
+                {}
+
+in 
+    result
