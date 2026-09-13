@@ -1,0 +1,81 @@
+/* Testing fxListTransformXL()
+
+Case #1:
+        input_list: {}
+        transforms: {}
+        output: {}
+        reason: input_list is invalid (empty)
+
+Case #2:
+        input_list: {1, 2, 3, 4}
+        transforms: {}
+        output: {}
+        reason: transforms is invalid (empty)
+
+Case #3:
+        input_list: {1, 2, 3, 4}
+        transforms: {(x) => x + 2, "I'm NOT a function!", (x) => Number.Acos(x)}
+        output: {}
+        reason: invalid transforms: a non-function type in list
+
+Case #4:
+        input_list: {1, 2, 3, 4}
+        transforms: {(x, y) => Number.Power(x, 2) * y/2}
+        output: {}
+        reason: invalid transforms: a function of more than one variable appears in list
+
+Case #5:
+        input_list: {1, 2, 3, 4}
+        transforms: {(x) => Number.Power(x, 3)}
+        output: {1, 8, 27, 64}
+        reason: a single transform is applied to each item in input_list
+
+Case #6:
+        input_list: {1, 2, 3, 4}
+        transforms: {(x) => Number.Power(x, 3), (x) => Number.RoundUp(Number.Power(x, 1/3))}
+        output: {1, 2, 3, 4}
+        reason: applied two successive transformations that are the inverse of one another
+
+Case #7:
+        input_list: {"a".."f"}
+        transforms: {(x) => [Character = x, Code = Character.ToNumber(x)]}
+        output: {[Character = "a", Code = 97], [Character = "b", Code = 98], [Character = "c", Code = 99], [Character = "d", Code = 100], [Character = "e", Code = 101], [Character = "f", Code = 102]}
+        reason: transform function changed datatype of items in output list
+
+Case #8:
+        input_list: {1..5}
+        transforms: {(x) => #date(2026, x, 1) , (x) => Text.Combine({Text.From(Date.Month(x)), Date.ToText(x, "MMM")}, " - ")}
+        output: {"1 - Jan", "2 - Feb", "3 - Mar", "4 - Apr", "5 - May"}
+        reason: transform function changed datatype of items in output list
+
+Case #9:
+        input_list: {0..8}
+        transforms: {(x) => Date.AddMonths(fxToday(), x), (x) => Date.ToText(x, [Format = "MMMM %d yyyy"]), (x) => let real_date = Date.FromText(x), day_name = Date.DayOfWeekName(real_date) in x & " falls on a " &  day_name}
+        output: {"September 11 2026 falls on a Friday", "October 11 2026 falls on a Sunday", "November 11 2026 falls on a Wednesday", "December 11 2026 falls on a Friday", "January 11 2027 falls on a Monday", "February 11 2027 falls on a Thursday", "March 11 2027 falls on a Thursday", "April 11 2027 falls on a Sunday", "May 11 2027 falls on a Tuesday"}
+        reason: multi-step transform using let..in successfully applied
+
+
+Case #10:
+        input_list: {1, 2, 3, 4}
+        transforms: {(x) => Number.Power(x, 3), (x) => Text.Combine({x, "some text"}, " - "), (x) => Number.RoundUp(Number.Power(x, 1/3))}
+        output: "An error occurred in the ‘’ query. Expression.Error: We cannot convert the value 1 to type Text.
+                        Details:
+                        Value=1
+                        Type=[Type]"
+        reason: transforms includes an obviously bad transform function
+
+Case #11:
+        input_list: {1, 2, 3, 4}
+        transforms: {(x) => Number.Power(x, 3), (x) => Text.Combine({x, "some text"}, " - "), (x) => Number.RoundUp(Number.Power(x, 1/3))}
+        output: {}
+        reason: now failing silently
+
+
+*/
+
+
+let
+    my_input_list = {1, 2, 3, 4}, 
+    my_transforms = {(x) => Number.Power(x, 3), (x) => Text.Combine({x, "some text"}, " - "), (x) => Number.RoundUp(Number.Power(x, 1/3))}
+in
+    fxTextFromList(fxListTransformXL(my_input_list, my_transforms))

@@ -1,0 +1,48 @@
+/*  fxListTransformXL()
+
+    A function that allows multiple successive transformations to be performed on 
+    a list. This is like PQ's List.TransformMany() on steroids. :-)
+
+
+    Parameters
+                input_list: a non-empty list [list of lists?]
+                transforms: a list of functions to be applied to input_list
+    
+
+    Returns:
+                the transformed list
+
+*/
+
+
+
+(input_list as list, transforms as list) as list =>
+
+let
+    //Validations
+    input_list_ok = input_list <> {},
+    //Ensure transforms list contains only functions with a single input variable
+    transforms_ok = (transforms <> {}) and 
+                    (List.AllTrue(List.Transform(transforms, each Value.Is(_, type function)))) and 
+                    (List.AllTrue(List.Transform(transforms, each Record.FieldCount(Type.FunctionParameters(Value.Type(_))) = 1))),
+    fxApplyTransform = (list_ as list, transform_ as function) as list =>
+            List.Transform(list_, each try transform_(_) otherwise null),
+    
+    output = if input_list_ok and transforms_ok then 
+                List.Accumulate(
+                                transforms,
+                                input_list,
+                                (state, current) =>
+                                    fxApplyTransform(state, current)
+                                )
+
+            else 
+                {},
+    //If there is one or more bad transforms, the resulting list will contain only nulls.
+    //It is unlikely that legit transform functions will convert a list to only nulls.
+    //Downstream process will have to decide what to do with an empty list.
+    is_all_null_values = List.NonNullCount(output) = 0,
+    final_list = if is_all_null_values then {} else output
+                
+in
+    final_list
